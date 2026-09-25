@@ -1,0 +1,223 @@
+<!doctype html>
+<html lang="id">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+  <meta name="theme-color" content="#0f766e">
+  <meta name="description" content="Fotomu - Pencarian foto berdasarkan kemiripan wajah">
+  <link rel="manifest" href="manifest.json">
+  <title>Fotomu — Face Search PoC</title>
+  <style>
+    :root{--green:#0f766e;--green2:#14b8a6;--bg:#f5f7f7;--card:#fff;--text:#17201f;--muted:#687572;--line:#dfe7e5;--danger:#b42318}
+    *{box-sizing:border-box} body{margin:0;font-family:Inter,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;background:var(--bg);color:var(--text)}
+    .app{max-width:1100px;margin:auto;padding:18px 14px 50px}
+    header{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:18px}
+    .brand{font-size:26px;font-weight:800;letter-spacing:-.6px}.brand span{color:var(--green)}
+    .badge{font-size:12px;background:#e6f6f3;color:#08665f;padding:7px 10px;border-radius:999px;font-weight:700}
+    .hero{background:linear-gradient(135deg,#0f766e,#115e59);color:white;border-radius:24px;padding:24px;box-shadow:0 12px 35px #0f766e20}
+    .hero h1{margin:0 0 8px;font-size:28px}.hero p{margin:0;color:#d9fffa;line-height:1.55}
+    .grid{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-top:14px}
+    .card{background:var(--card);border:1px solid var(--line);border-radius:20px;padding:18px;box-shadow:0 6px 20px #17201f08}
+    .card h2{font-size:17px;margin:0 0 6px}.desc{font-size:13px;color:var(--muted);line-height:1.5;margin:0 0 14px}
+    .drop{border:2px dashed #b8ceca;border-radius:16px;padding:22px;text-align:center;background:#fbfdfd;cursor:pointer}
+    .drop:hover{border-color:var(--green2);background:#f5fffd}.drop strong{display:block;margin-bottom:5px}
+    input[type=file]{display:none}
+    .preview{margin-top:12px;display:none;position:relative}.preview img{width:100%;max-height:300px;object-fit:contain;border-radius:14px;background:#eef2f1}
+    .count{font-size:12px;color:var(--muted);margin-top:8px}
+    .actions{display:flex;gap:10px;flex-wrap:wrap;margin:16px 0}
+    button{border:0;border-radius:13px;padding:13px 18px;font-weight:800;cursor:pointer;font-size:14px}
+    .primary{background:var(--green);color:white}.secondary{background:white;border:1px solid var(--line);color:var(--text)}button:disabled{opacity:.5;cursor:not-allowed}
+    .status{display:none;background:#fff;border:1px solid var(--line);border-radius:16px;padding:14px;margin:12px 0;color:var(--muted);font-size:13px}
+    .progress{height:8px;background:#e9efee;border-radius:99px;overflow:hidden;margin-top:9px}.bar{height:100%;width:0;background:var(--green2);transition:width .2s}
+    .results{margin-top:16px}.results-head{display:flex;justify-content:space-between;align-items:center;gap:10px;margin-bottom:10px}.results-head h2{margin:0;font-size:20px}
+    .results-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}
+    .result{background:white;border:1px solid var(--line);border-radius:16px;overflow:hidden}.result img{width:100%;aspect-ratio:1/1;object-fit:cover;display:block}
+    .result-body{padding:11px}.score{font-weight:800;color:var(--green);font-size:14px}.meta{font-size:12px;color:var(--muted);margin-top:4px}
+    .empty{text-align:center;padding:35px 15px;color:var(--muted);background:white;border:1px dashed var(--line);border-radius:18px}
+    .note{font-size:12px;color:var(--muted);line-height:1.55;margin-top:14px}.warn{color:#8a4b08}
+    .loading{display:inline-block;width:13px;height:13px;border:2px solid #ffffff55;border-top-color:white;border-radius:50%;animation:spin .8s linear infinite;vertical-align:-2px;margin-right:6px}@keyframes spin{to{transform:rotate(360deg)}}
+    @media(max-width:760px){.grid{grid-template-columns:1fr}.results-grid{grid-template-columns:repeat(2,1fr)}.hero h1{font-size:24px}}
+    @media(max-width:430px){.results-grid{grid-template-columns:1fr}}
+  </style>
+</head>
+<body>
+<div class="app">
+  <header><div class="brand">Foto<span>mu</span></div><div class="badge">PoC Fase 1</div></header>
+
+  <section class="hero">
+    <h1>Cari foto berdasarkan wajah</h1>
+    <p>Uji awal Fotomu: masukkan satu foto selfie sebagai pencarian dan beberapa foto kegiatan. Sistem akan mencari wajah yang paling mirip langsung di browser.</p>
+  </section>
+
+  <div class="grid">
+    <section class="card">
+      <h2>1. Foto saya</h2>
+      <p class="desc">Gunakan foto wajah yang cukup jelas. Untuk pengujian awal, foto selfie dari HP sudah cukup.</p>
+      <label class="drop" for="queryInput">
+        <strong>📷 Pilih foto selfie</strong>
+        <span>JPG, PNG, atau WebP</span>
+      </label>
+      <input id="queryInput" type="file" accept="image/*">
+      <div id="queryPreview" class="preview"><img id="queryImg" alt="Foto pencarian"></div>
+    </section>
+
+    <section class="card">
+      <h2>2. Foto kegiatan</h2>
+      <p class="desc">Pilih banyak foto sekaligus. Tidak perlu satu-satu. Untuk tes pertama, gunakan sekitar 30–50 foto.</p>
+      <label class="drop" for="galleryInput">
+        <strong>🖼️ Pilih banyak foto</strong>
+        <span>Tekan lalu pilih semua foto kegiatan</span>
+      </label>
+      <input id="galleryInput" type="file" accept="image/*" multiple>
+      <div id="galleryCount" class="count">Belum ada foto dipilih.</div>
+    </section>
+  </div>
+
+  <div class="actions">
+    <button id="searchBtn" class="primary" disabled>🔎 Cari Foto Saya</button>
+    <button id="clearBtn" class="secondary">Reset</button>
+  </div>
+
+  <div id="status" class="status">
+    <div id="statusText">Memproses…</div>
+    <div class="progress"><div id="bar" class="bar"></div></div>
+  </div>
+
+  <section class="results">
+    <div class="results-head"><h2>Hasil pencarian</h2><span id="resultInfo" class="count"></span></div>
+    <div id="resultsGrid" class="results-grid">
+      <div class="empty">Belum ada hasil. Masukkan selfie dan foto kegiatan terlebih dahulu.</div>
+    </div>
+  </section>
+
+  <p class="note">
+    <strong>Catatan PoC:</strong> proses pengenalan wajah dilakukan di perangkat/browser ini. Foto tidak dikirim ke server oleh kode PoC ini.
+    Hasil kemiripan bukan identifikasi pasti. Ambang awal yang dipakai adalah <b>0,52</b> dan nanti kita kalibrasi memakai dataset Fotomu.
+    <span class="warn">Untuk penggunaan produksi, kita akan menambahkan perlindungan privasi, pengelolaan foto, dan mekanisme penyimpanan yang sesuai.</span>
+  </p>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/face-api.js@0.22.2/dist/face-api.min.js"></script>
+<script>
+const MODEL_URL = "https://justadudewhohacks.github.io/face-api.js/models";
+const THRESHOLD = 0.52;
+let queryFile = null, galleryFiles = [];
+
+const $ = id => document.getElementById(id);
+const queryInput = $("queryInput"), galleryInput = $("galleryInput");
+const searchBtn = $("searchBtn"), clearBtn = $("clearBtn");
+
+function updateButton(){ searchBtn.disabled = !(queryFile && galleryFiles.length); }
+function setStatus(text, pct=0, show=true){ $("status").style.display=show?"block":"none"; $("statusText").textContent=text; $("bar").style.width=pct+"%"; }
+function loadImage(file){
+  return new Promise((resolve,reject)=>{
+    const url=URL.createObjectURL(file), img=new Image();
+    img.onload=()=>{URL.revokeObjectURL(url);resolve(img)};
+    img.onerror=()=>{URL.revokeObjectURL(url);reject(new Error("Gagal membaca gambar"))};
+    img.src=url;
+  });
+}
+function previewFile(file){
+  const url=URL.createObjectURL(file);
+  $("queryImg").src=url; $("queryPreview").style.display="block";
+}
+function distanceToScore(d){
+  return Math.max(0, Math.min(100, Math.round((1 - d/0.8)*100)));
+}
+function escapeHtml(s){return s.replace(/[&<>"']/g,m=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#039;"}[m]));}
+
+queryInput.addEventListener("change", e=>{
+  queryFile=e.target.files[0]||null;
+  if(queryFile) previewFile(queryFile);
+  updateButton();
+});
+galleryInput.addEventListener("change", e=>{
+  galleryFiles=[...e.target.files];
+  $("galleryCount").textContent=galleryFiles.length ? galleryFiles.length+" foto siap diproses." : "Belum ada foto dipilih.";
+  updateButton();
+});
+clearBtn.addEventListener("click",()=>{
+  queryFile=null; galleryFiles=[]; queryInput.value=""; galleryInput.value="";
+  $("queryPreview").style.display="none"; $("galleryCount").textContent="Belum ada foto dipilih.";
+  $("resultsGrid").innerHTML='<div class="empty">Belum ada hasil. Masukkan selfie dan foto kegiatan terlebih dahulu.</div>';
+  $("resultInfo").textContent=""; setStatus("",0,false); updateButton();
+});
+
+async function loadModels(){
+  setStatus("Menyiapkan mesin pengenalan wajah…",8);
+  await Promise.all([
+    faceapi.nets.tinyFaceDetector.loadFromUri(MODEL_URL),
+    faceapi.nets.faceLandmark68Net.loadFromUri(MODEL_URL),
+    faceapi.nets.faceRecognitionNet.loadFromUri(MODEL_URL)
+  ]);
+}
+async function getDescriptor(file, multiple=false){
+  const img=await loadImage(file);
+  const opts=new faceapi.TinyFaceDetectorOptions({inputSize:416, scoreThreshold:0.45});
+  let detections=await faceapi.detectAllFaces(img,opts).withFaceLandmarks().withFaceDescriptors();
+  if(!multiple){
+    if(!detections.length) throw new Error("Wajah tidak ditemukan pada foto selfie.");
+    detections.sort((a,b)=>b.detection.score-a.detection.score);
+    return detections[0].descriptor;
+  }
+  return detections;
+}
+
+searchBtn.addEventListener("click", async()=>{
+  searchBtn.disabled=true; clearBtn.disabled=true;
+  try{
+    await loadModels();
+    setStatus("Menganalisis foto selfie…",15);
+    const queryDescriptor=await getDescriptor(queryFile,false);
+    const results=[];
+    for(let i=0;i<galleryFiles.length;i++){
+      const file=galleryFiles[i];
+      setStatus(`Menganalisis foto ${i+1} dari ${galleryFiles.length}…`,15+Math.round((i/galleryFiles.length)*80));
+      try{
+        const detections=await getDescriptor(file,true);
+        let best=Infinity;
+        for(const d of detections) best=Math.min(best, faceapi.euclideanDistance(queryDescriptor,d.descriptor));
+        if(best<Infinity) results.push({file,distance:best});
+      }catch(err){
+        // Foto tanpa wajah dilewati.
+      }
+    }
+    results.sort((a,b)=>a.distance-b.distance);
+    renderResults(results);
+    setStatus(`Selesai. ${results.length} foto memiliki setidaknya satu wajah.`,100);
+  }catch(err){
+    setStatus("Terjadi masalah: "+err.message,0);
+    $("resultsGrid").innerHTML='<div class="empty">Pastikan selfie memiliki wajah yang terlihat jelas, lalu coba lagi.</div>';
+  }finally{
+    clearBtn.disabled=false; updateButton();
+  }
+});
+
+function renderResults(results){
+  $("resultInfo").textContent=results.length+" foto terdeteksi";
+  if(!results.length){
+    $("resultsGrid").innerHTML='<div class="empty">Tidak ada wajah yang berhasil diproses.</div>'; return;
+  }
+  const matched=results.filter(x=>x.distance<=THRESHOLD);
+  const shown=results.slice(0,30);
+  $("resultInfo").textContent=`${matched.length} cocok kuat · ${results.length} foto berwajah`;
+  $("resultsGrid").innerHTML=shown.map((r,i)=>{
+    const url=URL.createObjectURL(r.file), score=distanceToScore(r.distance), isMatch=r.distance<=THRESHOLD;
+    return `<article class="result">
+      <img src="${url}" alt="Hasil ${i+1}" loading="lazy">
+      <div class="result-body">
+        <div class="score">${isMatch?"✓ Kemungkinan cocok":"• Kandidat"} · ${score}%</div>
+        <div class="meta">Jarak wajah: ${r.distance.toFixed(3)}</div>
+        <div class="meta">${escapeHtml(r.file.name)}</div>
+      </div>
+    </article>`;
+  }).join("");
+}
+</script>
+<script>
+if ("serviceWorker" in navigator && location.protocol !== "file:") {
+  window.addEventListener("load", () => navigator.serviceWorker.register("./sw.js").catch(()=>{}));
+}
+</script>
+</body>
+</html>

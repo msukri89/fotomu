@@ -4,9 +4,9 @@
 </style></head><body><div class="app">
 <div class="top"><div class="brand">Foto<span>mu</span></div><a class="back" href="admin.html">← Kembali ke Admin</a></div>
 <section class="hero"><small>Fotomu · Phase 3B</small><h1 id="title">Kelola foto kegiatan</h1><p id="desc">Pilih banyak foto sekaligus. Foto akan dikompres ringan sebelum disimpan. Target maksimal 2048px dengan kualitas tinggi agar tetap nyaman untuk WhatsApp dan media sosial.</p><div class="meta"><span class="pill" id="datePill">📅 —</span><span class="pill" id="countPill">📸 0 foto</span><span class="pill">💾 Penyimpanan lokal</span><span class="pill">🗜️ Kompresi ringan</span></div></section>
-<section class="card"><label class="drop" for="photos"><strong>📷 Pilih banyak foto kegiatan</strong><span>JPG, PNG atau WebP · pilih puluhan sampai ratusan sekaligus</span></label><input id="photos" type="file" accept="image/*" multiple><div class="actions"><button id="upload" class="primary" disabled>＋ Tambahkan foto</button><button id="optimizeOld" class="primary">🗜️ Optimalkan foto lama</button><button id="clearAll" class="danger">Hapus semua foto</button></div><div id="status" class="status"></div><div id="progress" class="progress"><div id="bar" class="bar"></div></div></section>
+<section class="card"><label class="drop" for="photos"><strong>📷 Pilih banyak foto kegiatan</strong><span>JPG, PNG atau WebP · pilih puluhan sampai ratusan sekaligus</span></label><input id="photos" type="file" accept="image/*" multiple><div class="actions"><button id="upload" class="primary" disabled>＋ Tambahkan foto</button><button id="optimizeOld" class="primary">🗜️ Optimalkan foto lama</button><button id="indexFaces" class="primary">🧠 Buat indeks wajah</button><button id="clearAll" class="danger">Hapus semua foto</button></div><div id="status" class="status"></div><div id="progress" class="progress"><div id="bar" class="bar"></div></div></section>
 <div class="head"><h2>Foto di rak</h2><span id="subCount">0 foto</span></div><div id="grid" class="grid"></div>
-<p class="note"><b>Phase 3B.3:</b> foto baru dikompres ringan sebelum disimpan: sisi terpanjang maksimal 2048px, JPEG kualitas tinggi sekitar 84%. Proses satu per satu agar RAM browser tidak melonjak. Foto kecil yang sudah ringan dipertahankan agar kualitas tidak turun tanpa perlu. File belum dikirim ke storage online.</p>
+<p class="note"><b>Phase 3D:</b> setelah foto tersimpan, admin dapat membuat indeks wajah satu per satu. Indeks disimpan bersama data foto agar pencarian anggota tidak perlu menganalisis ulang seluruh foto.  foto baru dikompres ringan sebelum disimpan: sisi terpanjang maksimal 2048px, JPEG kualitas tinggi sekitar 84%. Proses satu per satu agar RAM browser tidak melonjak. Foto kecil yang sudah ringan dipertahankan agar kualitas tidak turun tanpa perlu. File belum dikirim ke storage online.</p>
 </div>
 <script>
 const EVENT_KEY="fotomu_admin_events_v1",DB_NAME="fotomu_local_db_v1",STORE="photos",eventId=new URLSearchParams(location.search).get("id");
@@ -81,6 +81,32 @@ $("optimizeOld").addEventListener("click",async()=>{
   }catch(e){$("status").textContent="Gagal mengoptimalkan: "+e.message}
   finally{$("optimizeOld").disabled=false;$("upload").disabled=false;$("clearAll").disabled=false}
 });
+const MODEL_URL="https://justadudewhohacks.github.io/face-api.js/models";
+async function getAllPhotoItems(){const db=await openDB();return new Promise((resolve,reject)=>{const tx=db.transaction(STORE,"readonly"),idx=tx.objectStore(STORE).index("eventId"),r=idx.getAll(eventId);r.onsuccess=()=>resolve(r.result.sort((a,b)=>b.createdAt-a.createdAt));r.onerror=()=>reject(r.error)})}
+async function getFaceDescriptorList(blob){const u=URL.createObjectURL(blob),img=new Image();try{await new Promise((res,rej)=>{img.onload=res;img.onerror=rej;img.src=u});const opts=new faceapi.TinyFaceDetectorOptions({inputSize:416,scoreThreshold:.45});const ds=await faceapi.detectAllFaces(img,opts).withFaceLandmarks().withFaceDescriptors();return ds.map(d=>Array.from(d.descriptor))}finally{URL.revokeObjectURL(u)}}
+async function loadFaceModelsForIndex(){await Promise.all([faceapi.nets.tinyFaceDetector.loadFromUri(MODEL_URL),faceapi.nets.faceLandmark68Net.loadFromUri(MODEL_URL),faceapi.nets.faceRecognitionNet.loadFromUri(MODEL_URL)])}
+$("indexFaces").addEventListener("click",async()=>{
+  if(!confirm("Buat atau perbarui indeks wajah untuk semua foto di rak ini? Foto tidak diubah atau dihapus."))return;
+  $("indexFaces").disabled=true;$("upload").disabled=true;$("optimizeOld").disabled=true;$("clearAll").disabled=true;$("progress").style.display="block";
+  try{
+    $("status").textContent="Menyiapkan mesin pengenalan wajah…";await loadFaceModelsForIndex();
+    const items=await getAllPhotoItems();let done=0,withFace=0,noFace=0,failed=0;
+    for(const item of items){
+      $("status").textContent="Membuat indeks wajah "+(done+1)+" dari "+items.length+"…";
+      try{
+        const faces=await getFaceDescriptorList(item.blob);
+        await updatePhoto({...item,faceDescriptors:faces,faceIndexedAt:Date.now(),faceIndexVersion:1});
+        if(faces.length)withFace++;else noFace++;
+      }catch(e){failed++}
+      done++;$("bar").style.width=Math.round(done/items.length*100)+"%";
+      if(done%2===0)await new Promise(requestAnimationFrame);
+    }
+    $("bar").style.width="100%";
+    $("status").textContent="Indeks selesai: "+done+" foto diperiksa · "+withFace+" memiliki wajah · "+noFace+" tanpa wajah · "+failed+" gagal.";
+    await refresh();
+  }catch(e){$("status").textContent="Gagal membuat indeks: "+e.message}
+  finally{$("indexFaces").disabled=false;$("upload").disabled=false;$("optimizeOld").disabled=false;$("clearAll").disabled=false}
+});
 $("clearAll").addEventListener("click",async()=>{if(!confirm("Hapus semua foto dari rak kegiatan ini?"))return;$("clearAll").disabled=true;$("optimizeOld").disabled=true;await deleteAll();$("status").textContent="Semua foto di rak telah dihapus.";await refresh();$("clearAll").disabled=false});
 (async()=>{const e=getEvent();if(!e){$("title").textContent="Kegiatan tidak ditemukan";$("desc").textContent="ID kegiatan tidak ditemukan. Kembali ke Admin dan pilih kegiatan yang benar.";return}$("title").textContent="Kelola foto · "+e.name;$("datePill").textContent="📅 "+(e.date||"Tanggal belum diisi");await refresh()})().catch(e=>$("status").textContent="Gagal membuka penyimpanan: "+e.message);
-</script></body></html>
+</script><script src="https://cdn.jsdelivr.net/npm/face-api.js@0.22.2/dist/face-api.min.js"></script></body></html>

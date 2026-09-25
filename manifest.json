@@ -1,9 +1,9 @@
 {
-  "name": "Fotomu",
+  "name": "Fotomu — Cari Foto Anda",
   "short_name": "Fotomu",
   "start_url": "./",
   "display": "standalone",
-  "background_color": "#f5f7f7",
+  "background_color": "#f4f7f6",
   "theme_color": "#0f766e",
-  "description": "Fotomu — Pencarian foto berdasarkan kemiripan wajah"
+  "description": "Fotomu — cari foto Anda dari dokumentasi kegiatan berdasarkan kemiripan wajah"
 }

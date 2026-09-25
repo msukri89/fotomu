@@ -18,7 +18,7 @@ h2{font-size:18px;margin:0 0 14px}label{display:block;font-size:12px;font-weight
 .actions{display:flex;gap:8px;margin-top:15px;flex-wrap:wrap}button{border:0;border-radius:12px;padding:11px 14px;font:inherit;font-size:12px;font-weight:850;cursor:pointer}.primary{background:var(--g);color:#fff}.secondary{background:#fff;border:1px solid var(--line)}.danger{background:#fff;color:var(--danger);border:1px solid #f0c5c1}
 .hint{font-size:11px;color:var(--muted);line-height:1.55;margin-top:11px}.status{margin-top:10px;font-size:11px;color:var(--g);min-height:16px}
 .list-head{display:flex;align-items:end;justify-content:space-between;gap:10px;margin-bottom:11px}.list-head span{font-size:11px;color:var(--muted)}.events{display:grid;gap:10px}
-.event{border:1px solid var(--line);border-radius:15px;padding:13px;display:grid;grid-template-columns:82px 1fr auto;gap:12px;align-items:center}.event-cover{width:82px;height:65px;border-radius:11px;background:linear-gradient(135deg,#d9ece8,#f8faf9);display:grid;place-items:center;color:var(--g);font-size:25px;overflow:hidden}.event-cover img{width:100%;height:100%;object-fit:cover}.event h3{margin:0 0 4px;font-size:14px}.event p{margin:0;color:var(--muted);font-size:11px;line-height:1.5}.event-actions{display:flex;gap:6px}.mini{padding:8px 10px;font-size:11px}
+.event{border:1px solid var(--line);border-radius:15px;padding:13px;display:grid;grid-template-columns:82px 1fr auto;gap:12px;align-items:center}.event-cover{width:82px;height:65px;border-radius:11px;background:linear-gradient(135deg,#d9ece8,#f8faf9);display:grid;place-items:center;color:var(--g);font-size:25px;overflow:hidden}.event-cover img{width:100%;height:100%;object-fit:cover}.event h3{margin:0 0 4px;font-size:14px}.event p{margin:0;color:var(--muted);font-size:11px;line-height:1.5}.event-actions{display:flex;gap:6px;flex-wrap:wrap}.mini{padding:8px 10px;font-size:11px}
 .empty{padding:30px 16px;text-align:center;border:1px dashed var(--line);border-radius:15px;color:var(--muted);font-size:12px}
 .badge{display:inline-block;background:var(--soft);color:var(--g);padding:5px 8px;border-radius:999px;font-size:10px;font-weight:850;margin-bottom:5px}
 .note{font-size:11px;color:var(--muted);line-height:1.6;margin-top:18px}
@@ -28,7 +28,7 @@ h2{font-size:18px;margin:0 0 14px}label{display:block;font-size:12px;font-weight
 <body>
 <div class="app">
  <div class="top"><div class="brand">Foto<span>mu</span></div><div class="nav"><a href="kegiatan.html">📁 Kegiatan</a><a href="index.html">🔎 Pencarian</a></div></div>
- <section class="hero"><small>Fotomu · Admin</small><h1>Kelola kegiatan</h1><p>Siapkan data kegiatan terlebih dahulu. Setelah backend dipasang, halaman ini akan menjadi pintu masuk untuk membuat kegiatan dan mengunggah foto ke raknya.</p></section>
+ <section class="hero"><small>Fotomu · Admin</small><h1>Kelola kegiatan</h1><p>Buat kegiatan, lalu buka tombol Foto untuk mengisi rak kegiatan dengan banyak foto. Pada tahap ini penyimpanan foto masih lokal untuk pengujian.</p></section>
  <div class="layout">
   <section class="card">
    <h2 id="formTitle">Buat kegiatan baru</h2>
@@ -48,7 +48,7 @@ h2{font-size:18px;margin:0 0 14px}label{display:block;font-size:12px;font-weight
    <div id="events" class="events"></div>
   </section>
  </div>
- <p class="note"><b>Catatan:</b> ini sengaja menjadi Phase 3A. Kita mengunci alur admin terlebih dahulu tanpa mempertaruhkan mesin pencarian wajah yang sudah berjalan. Tahap berikutnya adalah mengganti penyimpanan lokal dengan backend produksi dan menghubungkan upload foto ke rak kegiatan.</p>
+ <p class="note"><b>Catatan:</b> ini adalah Phase 3B. Kita menguji upload banyak foto dan rak kegiatan menggunakan IndexedDB sebelum memasang storage produksi.</p>
 </div>
 <script>
 const KEY="fotomu_admin_events_v1";
@@ -59,7 +59,7 @@ function resetForm(){editingId=null;coverData="";$("formTitle").textContent="Bua
 function render(){
  $("count").textContent=events.length+" kegiatan";
  if(!events.length){$("events").innerHTML='<div class="empty"><b>Belum ada kegiatan.</b><br>Buat kegiatan pertama dari formulir di sebelah kiri.</div>';return}
- $("events").innerHTML=events.map(e=>'<article class="event"><div class="event-cover">'+(e.cover?'<img src="'+e.cover+'" alt="">':'📸')+'</div><div><span class="badge">'+(e.date||"Tanggal belum diisi")+'</span><h3>'+esc(e.name)+'</h3><p>'+esc(e.desc||"Tanpa deskripsi")+'</p></div><div class="event-actions"><button class="secondary mini" onclick="editEvent(\''+e.id+'\')">Edit</button><button class="danger mini" onclick="deleteEvent(\''+e.id+'\')">Hapus</button></div></article>').join("")
+ $("events").innerHTML=events.map(e=>'<article class="event"><div class="event-cover">'+(e.cover?'<img src="'+e.cover+'" alt="">':'📸')+'</div><div><span class="badge">'+(e.date||"Tanggal belum diisi")+'</span><h3>'+esc(e.name)+'</h3><p>'+esc(e.desc||"Tanpa deskripsi")+'</p></div><div class="event-actions"><a class="secondary mini" style="text-decoration:none" href="kelola-foto.html?id='+e.id+'">📸 Foto</a><button class="secondary mini" onclick="editEvent(\''+e.id+'\')">Edit</button><button class="danger mini" onclick="deleteEvent(\''+e.id+'\')">Hapus</button></div></article>').join("")
 }
 function esc(s){return String(s).replace(/[&<>"']/g,m=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#039;"}[m]))}
 $("cover").addEventListener("change",e=>{const f=e.target.files[0];if(!f)return;const r=new FileReader();r.onload=()=>{coverData=r.result;$("coverImg").src=coverData;$("coverPreview").style.display="block"};r.readAsDataURL(f)});

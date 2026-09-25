@@ -1,0 +1,50 @@
+<!doctype html>
+<html lang="id">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#0f766e">
+<title>Fotomu — Rak Foto</title>
+<style>
+:root{--g:#0f766e;--gd:#115e59;--soft:#e7f7f4;--bg:#f4f7f6;--text:#17201f;--muted:#687572;--line:#dfe7e5}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--text);font-family:Inter,system-ui,-apple-system,"Segoe UI",sans-serif}
+.app{max-width:1120px;margin:auto;padding:18px 16px 55px}.top{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:18px}
+.brand{font-size:25px;font-weight:850}.brand span{color:var(--g)}.back{color:var(--g);text-decoration:none;font-size:13px;font-weight:800;background:#fff;border:1px solid var(--line);padding:9px 13px;border-radius:12px}
+.hero{background:linear-gradient(135deg,var(--g),var(--gd));color:white;border-radius:25px;padding:27px;margin-bottom:22px}
+.kicker{font-size:11px;font-weight:850;letter-spacing:.08em;text-transform:uppercase;color:#bdf1ea}.hero h1{font-size:29px;margin:7px 0}.hero p{margin:0;color:#dcfffb;line-height:1.6;font-size:14px;max-width:760px}
+.meta{display:flex;flex-wrap:wrap;gap:8px;margin-top:17px}.pill{background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.18);padding:7px 10px;border-radius:999px;font-size:11px}
+.toolbar{display:flex;justify-content:space-between;align-items:center;gap:12px;margin:0 2px 12px}.toolbar h2{font-size:19px;margin:0}.toolbar span{font-size:12px;color:var(--muted)}
+.search{background:#fff;border:1px solid var(--line);border-radius:14px;padding:11px 13px;width:260px;outline:none}.search:focus{border-color:#76c8bd}
+.grid{display:grid;grid-template-columns:repeat(4,1fr);gap:12px}.photo{background:#fff;border:1px solid var(--line);border-radius:15px;overflow:hidden}.photo img{width:100%;aspect-ratio:1/1;object-fit:cover;display:block;background:#eaf0ef}.caption{padding:10px 11px}.caption b{font-size:12px;display:block}.caption span{font-size:10.5px;color:var(--muted)}
+.demo{width:100%;aspect-ratio:1/1;background:linear-gradient(135deg,#d9ece8,#f8faf9);display:grid;place-items:center;font-size:38px;color:var(--g)}
+.empty{grid-column:1/-1;background:#fff;border:1px dashed var(--line);border-radius:18px;text-align:center;padding:42px 18px;color:var(--muted)}
+.cta{margin-top:18px;background:#fff;border:1px solid var(--line);border-radius:18px;padding:17px;display:flex;align-items:center;justify-content:space-between;gap:15px}.cta p{margin:3px 0 0;color:var(--muted);font-size:12px;line-height:1.5}.btn{display:inline-block;text-decoration:none;background:var(--g);color:#fff;padding:11px 15px;border-radius:12px;font-size:12px;font-weight:850;white-space:nowrap}
+.note{font-size:11.5px;color:var(--muted);line-height:1.6;margin-top:18px}
+@media(max-width:850px){.grid{grid-template-columns:repeat(3,1fr)}}@media(max-width:620px){.grid{grid-template-columns:repeat(2,1fr)}.toolbar{align-items:stretch;flex-direction:column}.search{width:100%}.cta{align-items:flex-start;flex-direction:column}}
+</style>
+</head>
+<body>
+<div class="app">
+ <div class="top"><div class="brand">Foto<span>mu</span></div><a class="back" href="kegiatan.html">← Kegiatan</a></div>
+ <section class="hero">
+  <div class="kicker">Rak foto</div>
+  <h1>Dokumentasi Kegiatan</h1>
+  <p>Semua foto dari satu kegiatan dikumpulkan di sini. Pada tahap berikutnya pengunjung dapat langsung mencari wajahnya dari rak ini.</p>
+  <div class="meta"><span class="pill">📅 25 September 2026</span><span class="pill">📸 49 foto</span><span class="pill">👤 Pencarian wajah tersedia</span></div>
+ </section>
+ <div class="toolbar"><div><h2>Foto kegiatan</h2><span>Contoh tampilan rak sebelum storage produksi dipasang.</span></div><input id="filter" class="search" placeholder="Cari nama file…" autocomplete="off"></div>
+ <div id="grid" class="grid"></div>
+ <div class="cta"><div><b>Ingin menemukan foto Anda?</b><p>Gunakan satu foto selfie. Fotomu akan mencari wajah yang paling mirip dari rak kegiatan ini.</p></div><a class="btn" href="index.html">🔎 Cari foto saya</a></div>
+ <p class="note"><b>Catatan pengembangan:</b> thumbnail di bawah adalah placeholder. Struktur ini sengaja dibuat lebih dulu agar nanti sumber foto bisa diganti ke Google Drive/CDN tanpa mengubah alur pengguna.</p>
+</div>
+<script>
+const grid=document.getElementById("grid"),filter=document.getElementById("filter");
+const names=["IMG_20250518_051806.jpg","IMG_20250518_051753.jpg","IMG_20250518_190204.jpg","IMG_20250518_184937.jpg","IMG_20250518_190141.jpg","IMG_20250518_051756.jpg","IMG_20250518_190136.jpg","IMG_20250518_190152.jpg"];
+function render(q=""){
+ const rows=names.filter(n=>n.toLowerCase().includes(q.toLowerCase()));
+ grid.innerHTML=rows.map((n,i)=>'<article class="photo"><div class="demo">📷</div><div class="caption"><b>Foto '+String(i+1).padStart(2,"0")+'</b><span>'+n+'</span></div></article>').join("")||'<div class="empty">Tidak ada foto yang cocok.</div>';
+}
+filter.addEventListener("input",e=>render(e.target.value));render();
+</script>
+</body>
+</html>

@@ -1,56 +1,14 @@
-<!doctype html>
-<html lang="id">
-<head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<meta name="theme-color" content="#0f766e">
-<title>Fotomu — Kegiatan</title>
-<style>
-:root{--g:#0f766e;--gd:#115e59;--soft:#e7f7f4;--bg:#f4f7f6;--text:#17201f;--muted:#687572;--line:#dfe7e5}
-*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--text);font-family:Inter,system-ui,-apple-system,"Segoe UI",sans-serif}
-.app{max-width:1050px;margin:auto;padding:18px 16px 55px}.top{display:flex;align-items:center;justify-content:space-between;margin-bottom:18px}
-.brand{font-size:25px;font-weight:850}.brand span{color:var(--g)}
-.back{color:var(--g);text-decoration:none;font-size:13px;font-weight:800;background:white;border:1px solid var(--line);padding:9px 13px;border-radius:12px}
-.hero{background:linear-gradient(135deg,var(--g),var(--gd));color:white;border-radius:25px;padding:27px;margin-bottom:22px}
-.hero small{color:#bdf1ea;font-weight:800;letter-spacing:.08em;text-transform:uppercase}.hero h1{font-size:29px;margin:7px 0}.hero p{margin:0;color:#dcfffb;line-height:1.6;font-size:14px;max-width:700px}
-.head{display:flex;justify-content:space-between;align-items:end;margin:0 2px 11px}.head h2{margin:0;font-size:19px}.head span{font-size:12px;color:var(--muted)}
-.card{background:white;border:1px solid var(--line);border-radius:19px;overflow:hidden;box-shadow:0 7px 24px rgba(23,32,31,.06)}
-.cover{height:230px;background:linear-gradient(135deg,#dcefeb,#f7faf9);display:grid;place-items:center;color:var(--g);font-size:52px}
-.body{padding:17px}.tag{display:inline-block;background:var(--soft);color:var(--g);padding:6px 9px;border-radius:999px;font-size:11px;font-weight:800}.title{font-size:19px;font-weight:850;margin:10px 0 5px}.meta{font-size:12px;color:var(--muted);line-height:1.6}
-.actions{display:flex;gap:9px;margin-top:14px}.btn{display:inline-block;text-decoration:none;padding:11px 15px;border-radius:12px;font-size:13px;font-weight:800}.primary{background:var(--g);color:white}.secondary{border:1px solid var(--line);color:var(--text)}
-.grid{display:grid;grid-template-columns:repeat(3,1fr);gap:13px}.empty{background:white;border:1px dashed var(--line);border-radius:18px;padding:35px 18px;text-align:center;color:var(--muted);grid-column:1/-1}.empty b{display:block;color:var(--text);margin-bottom:6px}
-.note{font-size:11.5px;color:var(--muted);line-height:1.6;margin-top:20px}
-@media(max-width:700px){.grid{grid-template-columns:1fr}.cover{height:190px}}
-</style>
-</head>
-<body>
-<div class="app">
-  <div class="top"><div class="brand">Foto<span>mu</span></div><div style="display:flex;gap:8px;align-items:center"><a class="back" href="admin.html">⚙ Admin</a><a class="back" href="index.html">← Cari Foto</a></div></div>
-  <section class="hero">
-    <small>Fotomu · Kegiatan</small>
-    <h1>Rak Foto Kegiatan</h1>
-    <p>Setiap kegiatan nantinya mempunyai rak foto sendiri. Pengunjung memilih kegiatan terlebih dahulu, kemudian mencari foto dirinya berdasarkan wajah.</p>
-  </section>
-  <div class="head"><h2>Kegiatan tersedia</h2><span>Fondasi fase berikutnya</span></div>
-  <div class="grid">
-    <article class="card">
-      <div class="cover">📸</div>
-      <div class="body">
-        <span class="tag">CONTOH KEGIATAN</span>
-        <div class="title">Dokumentasi Kegiatan</div>
-        <div class="meta">Rak foto contoh untuk menguji alur Fotomu. Pada versi produksi, data ini akan berasal dari database.</div>
-        <div class="actions">
-          <a class="btn primary" href="index.html">🔎 Cari foto saya</a>
-          <a class="btn secondary" href="rak.html">Buka rak</a>
-        </div>
-      </div>
-    </article>
-    <div class="empty">
-      <b>Kegiatan lain akan muncul di sini</b>
-      Setelah backend dipasang, admin dapat membuat kegiatan dan mengisi rak foto tanpa mengubah kode aplikasi.
-    </div>
-  </div>
-  <p class="note"><b>Catatan pengembangan:</b> halaman ini masih memakai data contoh. Belum ada upload/storage produksi. Tujuannya mengunci struktur UX sebelum kita memasang database dan Google Drive/Firebase.</p>
+<!doctype html><html lang="id"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><meta name="theme-color" content="#0f766e"><title>Fotomu — Kegiatan</title>
+<style>:root{--g:#0f766e;--gd:#115e59;--soft:#e7f7f4;--bg:#f4f7f6;--text:#17201f;--muted:#687572;--line:#dfe7e5}*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--text);font-family:Inter,system-ui,-apple-system,"Segoe UI",sans-serif}.app{max-width:1050px;margin:auto;padding:18px 16px 55px}.top{display:flex;align-items:center;justify-content:space-between;margin-bottom:18px}.brand{font-size:25px;font-weight:850}.brand span{color:var(--g)}.back{color:var(--g);text-decoration:none;font-size:13px;font-weight:800;background:#fff;border:1px solid var(--line);padding:9px 13px;border-radius:12px}.hero{background:linear-gradient(135deg,var(--g),var(--gd));color:#fff;border-radius:25px;padding:27px;margin-bottom:22px}.hero small{color:#bdf1ea;font-weight:800;letter-spacing:.08em;text-transform:uppercase}.hero h1{font-size:29px;margin:7px 0}.hero p{margin:0;color:#dcfffb;line-height:1.6;font-size:14px;max-width:700px}.head{display:flex;justify-content:space-between;align-items:end;margin:0 2px 11px}.head h2{margin:0;font-size:19px}.head span{font-size:12px;color:var(--muted)}.card{background:#fff;border:1px solid var(--line);border-radius:19px;overflow:hidden;box-shadow:0 7px 24px rgba(23,32,31,.06)}.cover{height:230px;background:linear-gradient(135deg,#dcefeb,#f7faf9);display:grid;place-items:center;color:var(--g);font-size:52px}.cover img{width:100%;height:100%;object-fit:cover}.body{padding:17px}.tag{display:inline-block;background:var(--soft);color:var(--g);padding:6px 9px;border-radius:999px;font-size:11px;font-weight:800}.title{font-size:19px;font-weight:850;margin:10px 0 5px}.meta{font-size:12px;color:var(--muted);line-height:1.6}.actions{display:flex;gap:9px;margin-top:14px}.btn{display:inline-block;text-decoration:none;padding:11px 15px;border-radius:12px;font-size:13px;font-weight:800}.primary{background:var(--g);color:white}.secondary{border:1px solid var(--line);color:var(--text)}.grid{display:grid;grid-template-columns:repeat(3,1fr);gap:13px}.empty{background:white;border:1px dashed var(--line);border-radius:18px;padding:35px 18px;text-align:center;color:var(--muted);grid-column:1/-1}.empty b{display:block;color:var(--text);margin-bottom:6px}.note{font-size:11.5px;color:var(--muted);line-height:1.6;margin-top:20px}@media(max-width:700px){.grid{grid-template-columns:1fr}.cover{height:190px}}</style></head><body><div class="app">
+<div class="top"><div class="brand">Foto<span>mu</span></div><div><a class="back" href="admin.html">⚙ Admin</a></div></div>
+<section class="hero"><small>Fotomu · Kegiatan</small><h1>Rak Foto Kegiatan</h1><p>Pilih kegiatan untuk membuka rak foto. Setiap rak nantinya dapat dipakai untuk pencarian foto berdasarkan wajah.</p></section>
+<div class="head"><h2>Kegiatan tersedia</h2><span id="count">0 kegiatan</span></div><div id="grid" class="grid"></div>
+<p class="note"><b>Phase 3B:</b> daftar kegiatan membaca data Admin dari browser. Foto rak disimpan lokal menggunakan IndexedDB untuk pengujian alur upload.</p>
 </div>
-</body>
-</html>
+<script>
+const KEY="fotomu_admin_events_v1",grid=document.getElementById("grid"),count=document.getElementById("count");
+const events=JSON.parse(localStorage.getItem(KEY)||"[]");count.textContent=events.length+" kegiatan";
+function esc(s){return String(s||"").replace(/[&<>"']/g,m=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#039;"}[m]))}
+if(!events.length){grid.innerHTML='<div class="empty"><b>Belum ada kegiatan.</b>Admin dapat membuat kegiatan terlebih dahulu.</div>'}
+else{grid.innerHTML=events.map(e=>'<article class="card"><div class="cover">'+(e.cover?'<img src="'+e.cover+'" alt="">':'📸')+'</div><div class="body"><span class="tag">'+esc(e.date||"Tanggal belum diisi")+'</span><div class="title">'+esc(e.name)+'</div><div class="meta">'+esc(e.desc||"Tanpa deskripsi")+'</div><div class="actions"><a class="btn primary" href="rak.html?id='+encodeURIComponent(e.id)+'">Buka rak</a></div></div></article>').join("")}
+</script></body></html>

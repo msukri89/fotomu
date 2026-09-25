@@ -73,10 +73,10 @@
   <section class="hero">
     <div class="hero-kicker">Dokumentasi kegiatan</div>
     <h1>Temukan foto Anda dengan wajah</h1>
-    <p>Upload satu foto wajah, lalu Fotomu mencari foto yang kemungkinan menampilkan Anda dari kumpulan foto kegiatan. Proses pencarian pada PoC ini dilakukan langsung di browser.</p>
+    <p id="heroDesc">Pilih satu foto wajah, lalu Fotomu mencari foto Anda langsung dari rak kegiatan yang dipilih. Foto kegiatan tidak perlu di-upload ulang.</p>
     <div class="steps">
       <div class="step"><b>01 · Foto Anda</b><span>Pilih selfie dengan wajah yang cukup jelas.</span></div>
-      <div class="step"><b>02 · Foto kegiatan</b><span>Pilih banyak foto sekaligus.</span></div>
+      <div class="step"><b>02 · Rak kegiatan</b><span>Foto kegiatan diambil otomatis dari rak ini.</span></div>
       <div class="step"><b>03 · Cari</b><span>Fotomu mengurutkan foto berdasarkan kemiripan wajah.</span></div>
     </div>
   </section>
@@ -86,34 +86,19 @@
     <p>Uji mesin pencarian wajah Fotomu</p>
   </div>
 
-  <div class="workspace">
-    <section class="card">
-      <div class="card-head">
-        <div class="num">1</div>
-        <div><h3>Foto Anda</h3><p class="desc">Gunakan foto wajah yang cukup jelas. Foto selfie dari HP sudah cukup untuk pengujian.</p></div>
-      </div>
-      <label class="drop" for="queryInput">
-        <span class="drop-icon">📷</span>
-        <strong>Pilih foto selfie</strong>
-        <span>JPG, PNG, atau WebP</span>
-      </label>
-      <input id="queryInput" type="file" accept="image/*">
-      <div id="queryPreview" class="preview"><img id="queryImg" alt="Foto pencarian"></div>
-    </section>
-
+  <div id="activityInfo" class="card" style="margin-bottom:14px;display:none"><div class="card-head"><div class="num">2</div><div><h3 id="activityName">Rak kegiatan</h3><p id="activityMeta" class="desc"></p></div></div></div><div class="workspace">
     <section class="card">
       <div class="card-head">
         <div class="num">2</div>
-        <div><h3>Foto kegiatan</h3><p class="desc">Pilih banyak foto sekaligus. Untuk pengujian awal, 30–100 foto sudah cukup.</p></div>
+        <div><h3>Foto kegiatan</h3><p class="desc">Foto diambil otomatis dari rak kegiatan. Anda tidak perlu memilih atau meng-upload ulang foto kegiatan.</p></div>
       </div>
-      <label class="drop" for="galleryInput">
+      <div class="drop" style="cursor:default">
         <span class="drop-icon">🖼️</span>
-        <strong>Pilih foto kegiatan</strong>
-        <span>Tekan lalu pilih semua foto kegiatan</span>
-      </label>
-      <input id="galleryInput" type="file" accept="image/*" multiple>
-      <div id="galleryCount" class="count">Belum ada foto dipilih.</div>
+        <strong id="galleryTitle">Memuat foto dari rak…</strong>
+        <span id="galleryCount">Memuat…</span>
+      </div>
     </section>
+
   </div>
 
   <div class="actions">
@@ -134,7 +119,7 @@
   </section>
 
   <p class="note">
-    <strong>PoC:</strong> pengenalan wajah dilakukan di perangkat/browser ini. Foto tidak dikirim ke server oleh kode PoC ini.
+    <strong>PoC:</strong> pengenalan wajah dilakukan di perangkat/browser ini. Foto tetap diproses di browser pada fase ini. Foto kegiatan diambil dari IndexedDB lokal dan tidak perlu di-upload ulang.
     Hasil kemiripan bukan identifikasi pasti. Ambang awal yang dipakai adalah <b>0,52</b> dan akan dikalibrasi lagi menggunakan dataset Fotomu.
   </p>
 </div>
@@ -143,7 +128,7 @@
 <script>
 const MODEL_URL = "https://justadudewhohacks.github.io/face-api.js/models";
 const THRESHOLD = 0.52;
-let queryFile = null, galleryFiles = [];
+let queryFile = null, galleryFiles = [], eventId = new URLSearchParams(location.search).get("id"), dbPhotos = [];
 
 const $ = id => document.getElementById(id);
 const queryInput = $("queryInput"), galleryInput = $("galleryInput");
@@ -178,11 +163,7 @@ queryInput.addEventListener("change", e=>{
   if(queryFile) previewFile(queryFile);
   updateButton();
 });
-galleryInput.addEventListener("change", e=>{
-  galleryFiles=[...e.target.files];
-  $("galleryCount").textContent=galleryFiles.length ? galleryFiles.length+" foto siap diproses." : "Belum ada foto dipilih.";
-  updateButton();
-});
+// Foto kegiatan dimuat otomatis dari IndexedDB berdasarkan id rak.
 clearBtn.addEventListener("click",()=>{
   const old=$("queryImg").dataset.url; if(old) URL.revokeObjectURL(old);
   queryFile=null; galleryFiles=[]; queryInput.value=""; galleryInput.value="";
@@ -192,6 +173,17 @@ clearBtn.addEventListener("click",()=>{
   $("resultInfo").textContent=""; setStatus("",0,false); updateButton();
 });
 
+async function openPhotoDB(){return new Promise((resolve,reject)=>{const r=indexedDB.open("fotomu_local_db_v1",1);r.onupgradeneeded=()=>{const db=r.result;if(!db.objectStoreNames.contains("photos")){const s=db.createObjectStore("photos",{keyPath:"id"});s.createIndex("eventId","eventId")}};r.onsuccess=()=>resolve(r.result);r.onerror=()=>reject(r.error)})}
+async function loadActivityPhotos(){
+  if(!eventId){$("activityInfo").style.display="block";$("activityName").textContent="Rak belum dipilih";$("activityMeta").textContent="Buka pencarian dari tombol Cari foto pada Rak kegiatan.";return}
+  const events=JSON.parse(localStorage.getItem("fotomu_admin_events_v1")||"[]"),e=events.find(x=>x.id===eventId);
+  if(!e){$("activityInfo").style.display="block";$("activityName").textContent="Kegiatan tidak ditemukan";$("activityMeta").textContent="Kembali ke Rak dan buka pencarian dari sana.";return}
+  const db=await openPhotoDB();
+  dbPhotos=await new Promise((resolve,reject)=>{const tx=db.transaction("photos","readonly"),r=tx.objectStore("photos").index("eventId").getAll(eventId);r.onsuccess=()=>resolve(r.result.sort((a,b)=>b.createdAt-a.createdAt));r.onerror=()=>reject(r.error)});
+  galleryFiles=dbPhotos.map(p=>p.blob);
+  $("activityInfo").style.display="block";$("activityName").textContent=e.name;$("activityMeta").textContent=(e.date||"Tanggal belum diisi")+" · "+galleryFiles.length+" foto di rak";
+  $("galleryTitle").textContent=e.name;$("galleryCount").textContent=galleryFiles.length+" foto siap dicari";updateButton();
+}
 async function loadModels(){
   setStatus("Menyiapkan mesin pengenalan wajah…",8);
   await Promise.all([

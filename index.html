@@ -1,261 +1,58 @@
 <!doctype html>
 <html lang="id">
 <head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-  <meta name="theme-color" content="#0f766e">
-  <meta name="description" content="Fotomu — cari foto Anda dari dokumentasi kegiatan berdasarkan kemiripan wajah">
-  <link rel="manifest" href="manifest.json">
-  <title>Fotomu — Cari Foto Anda</title>
-  <style>
-    :root{
-      --green:#0f766e;--green-dark:#115e59;--green-soft:#e7f7f4;--green-line:#b8ded8;
-      --bg:#f4f7f6;--card:#fff;--text:#17201f;--muted:#687572;--line:#dfe7e5;
-      --shadow:0 8px 28px rgba(23,32,31,.07);--radius:20px;
-    }
-    *{box-sizing:border-box}
-    body{margin:0;font-family:Inter,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;background:var(--bg);color:var(--text)}
-    button,input{font:inherit}
-    .app{max-width:1120px;margin:auto;padding:18px 16px 56px}
-    header{display:flex;align-items:center;justify-content:space-between;gap:14px;margin-bottom:18px}
-    .brand{font-size:25px;font-weight:850;letter-spacing:-.7px}.brand span{color:var(--green)}
-    .top-actions{display:flex;align-items:center;gap:8px}
-    .badge{font-size:12px;background:var(--green-soft);color:#08665f;padding:7px 11px;border-radius:999px;font-weight:750}
-    .hero{background:linear-gradient(135deg,var(--green),var(--green-dark));color:#fff;border-radius:26px;padding:27px;box-shadow:0 14px 38px rgba(15,118,110,.18)}
-    .hero-kicker{font-size:12px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:#bdf1ea;margin-bottom:8px}
-    .hero h1{margin:0 0 9px;font-size:30px;letter-spacing:-.7px}.hero p{margin:0;max-width:760px;color:#ddfffb;line-height:1.6;font-size:14px}
-    .steps{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-top:18px}
-    .step{background:rgba(255,255,255,.10);border:1px solid rgba(255,255,255,.15);border-radius:15px;padding:12px}
-    .step b{display:block;font-size:13px;margin-bottom:3px}.step span{font-size:12px;color:#d7f8f4}
-    .section-title{display:flex;align-items:end;justify-content:space-between;gap:10px;margin:25px 2px 10px}
-    .section-title h2{margin:0;font-size:19px;letter-spacing:-.2px}.section-title p{margin:0;font-size:12px;color:var(--muted)}
-    .workspace{display:grid;grid-template-columns:1fr 1fr;gap:14px}
-    .card{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);padding:18px;box-shadow:var(--shadow)}
-    .card-head{display:flex;align-items:flex-start;gap:12px;margin-bottom:13px}
-    .num{width:30px;height:30px;display:grid;place-items:center;border-radius:10px;background:var(--green-soft);color:var(--green);font-weight:850;font-size:13px;flex:0 0 auto}
-    .card h3{font-size:16px;margin:1px 0 4px}.desc{font-size:12.5px;color:var(--muted);line-height:1.5;margin:0}
-    .drop{display:block;border:2px dashed var(--green-line);border-radius:16px;padding:23px 16px;text-align:center;background:#fbfdfd;cursor:pointer;transition:.18s}
-    .drop:hover{border-color:#7bc8bd;background:#f4fffd}.drop-icon{font-size:24px;display:block;margin-bottom:7px}.drop strong{display:block;margin-bottom:4px;font-size:14px}.drop span{font-size:12px;color:var(--muted)}
-    input[type=file]{display:none}
-    .preview{margin-top:12px;display:none}.preview img{width:100%;height:280px;object-fit:contain;border-radius:14px;background:#eef2f1;display:block}
-    .count{font-size:12px;color:var(--muted);margin-top:9px}
-    .actions{display:flex;gap:9px;flex-wrap:wrap;margin:14px 0 0}
-    button{border:0;border-radius:13px;padding:12px 17px;font-weight:800;cursor:pointer;font-size:13px}
-    .primary{background:var(--green);color:white}.secondary{background:white;border:1px solid var(--line);color:var(--text)}
-    button:disabled{opacity:.48;cursor:not-allowed}
-    .status{display:none;background:#fff;border:1px solid var(--line);border-radius:16px;padding:13px 14px;margin-top:14px;color:var(--muted);font-size:12.5px;box-shadow:var(--shadow)}
-    .status-row{display:flex;justify-content:space-between;gap:10px}.status-row b{color:var(--text)}
-    .progress{height:7px;background:#e9efee;border-radius:99px;overflow:hidden;margin-top:9px}.bar{height:100%;width:0;background:#14b8a6;transition:width .2s}
-    .results{margin-top:25px}.results-head{display:flex;justify-content:space-between;align-items:end;gap:10px;margin-bottom:11px}.results-head h2{margin:0;font-size:19px}.result-info{font-size:12px;color:var(--muted);text-align:right}
-    .results-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}
-    .result{background:white;border:1px solid var(--line);border-radius:16px;overflow:hidden;box-shadow:0 5px 18px rgba(23,32,31,.045)}
-    .result img{width:100%;aspect-ratio:1/1;object-fit:cover;display:block;background:#eef2f1}
-    .result-body{padding:10px 11px 12px}.score{font-weight:800;color:var(--green);font-size:13px}.candidate{color:#687572}.meta{font-size:11px;color:var(--muted);margin-top:4px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-    .empty{text-align:center;padding:38px 16px;color:var(--muted);background:white;border:1px dashed var(--line);border-radius:18px;grid-column:1/-1}
-    .note{font-size:11.5px;color:var(--muted);line-height:1.6;margin:18px 2px 0}
-    .note strong{color:var(--text)}
-    @media(max-width:760px){
-      .app{padding:12px 12px 40px}.hero{padding:22px 19px;border-radius:22px}.hero h1{font-size:25px}
-      .steps{grid-template-columns:1fr}.workspace{grid-template-columns:1fr}.results-grid{grid-template-columns:repeat(2,1fr)}
-    }
-    @media(max-width:430px){.results-grid{grid-template-columns:1fr}.preview img{height:250px}.top-actions .badge{display:none}}
-    @keyframes spin{to{transform:rotate(360deg)}}.loading{display:inline-block;width:13px;height:13px;border:2px solid #ffffff55;border-top-color:white;border-radius:50%;animation:spin .8s linear infinite;vertical-align:-2px;margin-right:6px}
-  </style>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#0f766e"><meta name="description" content="Fotomu — cari foto Anda dari rak kegiatan berdasarkan kemiripan wajah">
+<title>Fotomu — Cari Foto Anda</title>
+<style>
+:root{--g:#0f766e;--gd:#115e59;--bg:#f4f7f6;--text:#17201f;--muted:#687572;--line:#dfe7e5;--soft:#e7f7f4}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--text);font-family:Inter,system-ui,-apple-system,"Segoe UI",sans-serif}
+.app{max-width:1050px;margin:auto;padding:18px 16px 55px}.top{display:flex;justify-content:space-between;align-items:center;margin-bottom:18px}
+.brand{font-size:25px;font-weight:850}.brand span{color:var(--g)}.back{color:var(--g);text-decoration:none;font-size:12px;font-weight:800;background:#fff;border:1px solid var(--line);padding:9px 12px;border-radius:11px}
+.hero{background:linear-gradient(135deg,var(--g),var(--gd));color:#fff;border-radius:25px;padding:27px;margin-bottom:20px}.hero small{color:#bdf1ea;font-weight:850;letter-spacing:.08em;text-transform:uppercase}.hero h1{font-size:29px;margin:7px 0}.hero p{margin:0;color:#dcfffb;line-height:1.6;font-size:14px;max-width:780px}
+.activity{background:#fff;border:1px solid var(--line);border-radius:18px;padding:16px;margin-bottom:14px}.activity b{font-size:17px}.activity span{display:block;color:var(--muted);font-size:12px;margin-top:4px}
+.card{background:#fff;border:1px solid var(--line);border-radius:19px;padding:18px;box-shadow:0 7px 24px #17201f0d}.head{display:flex;gap:12px;align-items:flex-start}.num{width:31px;height:31px;display:grid;place-items:center;border-radius:10px;background:var(--soft);color:var(--g);font-weight:850;flex:0 0 auto}.card h2{font-size:17px;margin:1px 0 4px}.desc{margin:0;color:var(--muted);font-size:12.5px;line-height:1.5}
+.drop{display:block;margin-top:15px;border:2px dashed #b8ded8;border-radius:16px;padding:24px 16px;text-align:center;background:#fbfdfd;cursor:pointer}.drop strong{display:block;font-size:14px;margin-bottom:4px}.drop span{font-size:11px;color:var(--muted)}input[type=file]{display:none}
+.preview{display:none;margin-top:12px}.preview img{width:100%;height:260px;object-fit:contain;background:#eef2f1;border-radius:14px;display:block}
+.actions{display:flex;gap:9px;flex-wrap:wrap;margin-top:14px}button{border:0;border-radius:12px;padding:12px 16px;font:inherit;font-size:13px;font-weight:850;cursor:pointer}.primary{background:var(--g);color:#fff}.secondary{background:#fff;border:1px solid var(--line);color:var(--text)}button:disabled{opacity:.5;cursor:not-allowed}
+.status{display:none;margin-top:14px;background:#fff;border:1px solid var(--line);border-radius:15px;padding:12px;font-size:12px;color:var(--muted)}.status b{color:var(--text)}.progress{height:7px;background:#e9efee;border-radius:99px;overflow:hidden;margin-top:8px}.bar{height:100%;width:0;background:#14b8a6;transition:width .2s}
+.results{margin-top:22px}.results-head{display:flex;justify-content:space-between;align-items:end;margin-bottom:10px}.results-head h2{font-size:19px;margin:0}.result-info{font-size:11px;color:var(--muted);text-align:right}.grid{display:grid;grid-template-columns:repeat(4,1fr);gap:12px}.result{background:#fff;border:1px solid var(--line);border-radius:15px;overflow:hidden}.result img{width:100%;aspect-ratio:1;object-fit:cover;display:block;background:#eef2f1}.body{padding:9px 10px 11px}.score{font-size:12px;font-weight:850;color:var(--g)}.meta{font-size:10px;color:var(--muted);margin-top:3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.empty{grid-column:1/-1;background:#fff;border:1px dashed var(--line);border-radius:17px;text-align:center;padding:40px 18px;color:var(--muted);font-size:12px}.note{font-size:11px;color:var(--muted);line-height:1.6;margin-top:17px}
+@media(max-width:800px){.grid{grid-template-columns:repeat(3,1fr)}}@media(max-width:600px){.grid{grid-template-columns:repeat(2,1fr)}.hero{padding:22px 19px}.hero h1{font-size:25px}}
+</style>
 </head>
-<body>
-<div class="app">
-  <header>
-    <a href="kegiatan.html" style="text-decoration:none;color:#0f766e;font-size:13px;font-weight:800;background:#fff;border:1px solid #dfe7e5;padding:8px 11px;border-radius:11px">📁 Kegiatan</a>
-    <div class="brand">Foto<span>mu</span></div>
-    <div class="top-actions"><div class="badge">PWA • Face Search</div></div>
-  </header>
-
-  <section class="hero">
-    <div class="hero-kicker">Dokumentasi kegiatan</div>
-    <h1>Temukan foto Anda dengan wajah</h1>
-    <p id="heroDesc">Pilih satu foto wajah, lalu Fotomu mencari foto Anda langsung dari rak kegiatan yang dipilih. Foto kegiatan tidak perlu di-upload ulang.</p>
-    <div class="steps">
-      <div class="step"><b>01 · Foto Anda</b><span>Pilih selfie dengan wajah yang cukup jelas.</span></div>
-      <div class="step"><b>02 · Rak kegiatan</b><span>Foto kegiatan diambil otomatis dari rak ini.</span></div>
-      <div class="step"><b>03 · Cari</b><span>Fotomu mengurutkan foto berdasarkan kemiripan wajah.</span></div>
-    </div>
-  </section>
-
-  <div class="section-title">
-    <h2>Cari foto</h2>
-    <p>Uji mesin pencarian wajah Fotomu</p>
-  </div>
-
-  <div id="activityInfo" class="card" style="margin-bottom:14px;display:none"><div class="card-head"><div class="num">2</div><div><h3 id="activityName">Rak kegiatan</h3><p id="activityMeta" class="desc"></p></div></div></div><div class="workspace">
-    <section class="card">
-      <div class="card-head">
-        <div class="num">2</div>
-        <div><h3>Foto kegiatan</h3><p class="desc">Foto diambil otomatis dari rak kegiatan. Anda tidak perlu memilih atau meng-upload ulang foto kegiatan.</p></div>
-      </div>
-      <div class="drop" style="cursor:default">
-        <span class="drop-icon">🖼️</span>
-        <strong id="galleryTitle">Memuat foto dari rak…</strong>
-        <span id="galleryCount">Memuat…</span>
-      </div>
-    </section>
-
-  </div>
-
-  <div class="actions">
-    <button id="searchBtn" class="primary" disabled>🔎 Cari Foto Saya</button>
-    <button id="clearBtn" class="secondary">Reset</button>
-  </div>
-
-  <div id="status" class="status">
-    <div class="status-row"><span id="statusText">Memproses…</span><b id="statusPct">0%</b></div>
-    <div class="progress"><div id="bar" class="bar"></div></div>
-  </div>
-
-  <section class="results">
-    <div class="results-head"><h2>Hasil pencarian</h2><span id="resultInfo" class="result-info"></span></div>
-    <div id="resultsGrid" class="results-grid">
-      <div class="empty">Belum ada hasil. Masukkan selfie dan foto kegiatan terlebih dahulu.</div>
-    </div>
-  </section>
-
-  <p class="note">
-    <strong>PoC:</strong> pengenalan wajah dilakukan di perangkat/browser ini. Foto tetap diproses di browser pada fase ini. Foto kegiatan diambil dari IndexedDB lokal dan tidak perlu di-upload ulang.
-    Hasil kemiripan bukan identifikasi pasti. Ambang awal yang dipakai adalah <b>0,52</b> dan akan dikalibrasi lagi menggunakan dataset Fotomu.
-  </p>
+<body><div class="app">
+<div class="top"><div class="brand">Foto<span>mu</span></div><a id="back" class="back" href="kegiatan.html">← Kegiatan</a></div>
+<section class="hero"><small>Cari foto</small><h1>Temukan foto Anda</h1><p>Masukkan satu foto wajah. Fotomu akan mencari kecocokan langsung dari indeks wajah rak kegiatan ini. Foto kegiatan tidak perlu dipilih atau di-upload ulang.</p></section>
+<div id="activity" class="activity"><b id="activityName">Memuat rak…</b><span id="activityMeta">Memuat informasi kegiatan…</span></div>
+<section class="card">
+<div class="head"><div class="num">1</div><div><h2>Foto wajah Anda</h2><p class="desc">Gunakan selfie atau foto wajah yang cukup jelas. Foto ini hanya digunakan untuk proses pencarian di browser.</p></div></div>
+<label class="drop" for="query"><strong>📷 Pilih foto wajah</strong><span>JPG, PNG atau WebP</span></label>
+<input id="query" type="file" accept="image/*">
+<div id="preview" class="preview"><img id="queryImg" alt="Foto wajah yang dipilih"></div>
+<div class="actions"><button id="searchBtn" class="primary" disabled>🔎 Cari Foto Saya</button><button id="clearBtn" class="secondary">Reset</button></div>
+<div id="status" class="status"><div><span id="statusText">Memproses…</span> <b id="statusPct">0%</b></div><div class="progress"><div id="bar" class="bar"></div></div></div>
+</section>
+<section class="results"><div class="results-head"><h2>Hasil pencarian</h2><span id="resultInfo" class="result-info"></span></div><div id="resultsGrid" class="grid"><div class="empty">Pilih foto wajah untuk memulai pencarian.</div></div></section>
+<p class="note"><b>Phase 3D:</b> pencarian membandingkan descriptor wajah selfie dengan indeks yang sudah dibuat dari rak. Gambar kegiatan hanya dibaca saat hasil yang cocok ditampilkan.</p>
 </div>
-
 <script src="https://cdn.jsdelivr.net/npm/face-api.js@0.22.2/dist/face-api.min.js"></script>
 <script>
-const MODEL_URL = "https://justadudewhohacks.github.io/face-api.js/models";
-const THRESHOLD = 0.52;
-let queryFile = null, galleryFiles = [], eventId = new URLSearchParams(location.search).get("id"), dbPhotos = [];
-
-const $ = id => document.getElementById(id);
-const queryInput = $("queryInput"), galleryInput = $("galleryInput");
-const searchBtn = $("searchBtn"), clearBtn = $("clearBtn");
-
-function updateButton(){ searchBtn.disabled = !(queryFile && galleryFiles.length); }
-function setStatus(text, pct=0, show=true){
-  $("status").style.display=show?"block":"none";
-  $("statusText").textContent=text;
-  $("bar").style.width=pct+"%";
-  $("statusPct").textContent=Math.round(pct)+"%";
-}
-function loadImage(file){
-  return new Promise((resolve,reject)=>{
-    const url=URL.createObjectURL(file), img=new Image();
-    img.onload=()=>{URL.revokeObjectURL(url);resolve(img)};
-    img.onerror=()=>{URL.revokeObjectURL(url);reject(new Error("Gagal membaca gambar"))};
-    img.src=url;
-  });
-}
-function previewFile(file){
-  const old=$("queryImg").dataset.url;
-  if(old) URL.revokeObjectURL(old);
-  const url=URL.createObjectURL(file);
-  $("queryImg").dataset.url=url; $("queryImg").src=url; $("queryPreview").style.display="block";
-}
-function distanceToScore(d){ return Math.max(0, Math.min(100, Math.round((1 - d/0.8)*100))); }
-function escapeHtml(s){return s.replace(/[&<>"']/g,m=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#039;"}[m]));}
-
-queryInput.addEventListener("change", e=>{
-  queryFile=e.target.files[0]||null;
-  if(queryFile) previewFile(queryFile);
-  updateButton();
-});
-// Foto kegiatan dimuat otomatis dari IndexedDB berdasarkan id rak.
-clearBtn.addEventListener("click",()=>{
-  const old=$("queryImg").dataset.url; if(old) URL.revokeObjectURL(old);
-  queryFile=null; galleryFiles=[]; queryInput.value=""; galleryInput.value="";
-  $("queryImg").dataset.url=""; $("queryImg").src=""; $("queryPreview").style.display="none";
-  $("galleryCount").textContent="Belum ada foto dipilih.";
-  $("resultsGrid").innerHTML='<div class="empty">Belum ada hasil. Masukkan selfie dan foto kegiatan terlebih dahulu.</div>';
-  $("resultInfo").textContent=""; setStatus("",0,false); updateButton();
-});
-
-async function openPhotoDB(){return new Promise((resolve,reject)=>{const r=indexedDB.open("fotomu_local_db_v1",1);r.onupgradeneeded=()=>{const db=r.result;if(!db.objectStoreNames.contains("photos")){const s=db.createObjectStore("photos",{keyPath:"id"});s.createIndex("eventId","eventId")}};r.onsuccess=()=>resolve(r.result);r.onerror=()=>reject(r.error)})}
-async function loadActivityPhotos(){
-  if(!eventId){$("activityInfo").style.display="block";$("activityName").textContent="Rak belum dipilih";$("activityMeta").textContent="Buka pencarian dari tombol Cari foto pada Rak kegiatan.";return}
-  const events=JSON.parse(localStorage.getItem("fotomu_admin_events_v1")||"[]"),e=events.find(x=>x.id===eventId);
-  if(!e){$("activityInfo").style.display="block";$("activityName").textContent="Kegiatan tidak ditemukan";$("activityMeta").textContent="Kembali ke Rak dan buka pencarian dari sana.";return}
-  const db=await openPhotoDB();
-  dbPhotos=await new Promise((resolve,reject)=>{const tx=db.transaction("photos","readonly"),r=tx.objectStore("photos").index("eventId").getAll(eventId);r.onsuccess=()=>resolve(r.result.sort((a,b)=>b.createdAt-a.createdAt));r.onerror=()=>reject(r.error)});
-  galleryFiles=dbPhotos.map(p=>p.blob);
-  $("activityInfo").style.display="block";$("activityName").textContent=e.name;$("activityMeta").textContent=(e.date||"Tanggal belum diisi")+" · "+galleryFiles.length+" foto di rak";
-  $("galleryTitle").textContent=e.name;$("galleryCount").textContent=galleryFiles.length+" foto siap dicari";updateButton();
-}
-async function loadModels(){
-  setStatus("Menyiapkan mesin pengenalan wajah…",8);
-  await Promise.all([
-    faceapi.nets.tinyFaceDetector.loadFromUri(MODEL_URL),
-    faceapi.nets.faceLandmark68Net.loadFromUri(MODEL_URL),
-    faceapi.nets.faceRecognitionNet.loadFromUri(MODEL_URL)
-  ]);
-}
-async function getDescriptor(file, multiple=false){
-  const img=await loadImage(file);
-  const opts=new faceapi.TinyFaceDetectorOptions({inputSize:416, scoreThreshold:0.45});
-  const detections=await faceapi.detectAllFaces(img,opts).withFaceLandmarks().withFaceDescriptors();
-  if(!multiple){
-    if(!detections.length) throw new Error("Wajah tidak ditemukan pada foto selfie.");
-    detections.sort((a,b)=>b.detection.score-a.detection.score);
-    return detections[0].descriptor;
-  }
-  return detections;
-}
-
-searchBtn.addEventListener("click", async()=>{
-  searchBtn.disabled=true; clearBtn.disabled=true;
-  try{
-    await loadModels();
-    setStatus("Menganalisis foto selfie…",15);
-    const queryDescriptor=await getDescriptor(queryFile,false);
-    const results=[];
-    for(let i=0;i<galleryFiles.length;i++){
-      const file=galleryFiles[i];
-      setStatus("Menganalisis foto "+(i+1)+" dari "+galleryFiles.length+"…",15+Math.round((i/galleryFiles.length)*80));
-      try{
-        const detections=await getDescriptor(file,true);
-        let best=Infinity;
-        for(const d of detections) best=Math.min(best, faceapi.euclideanDistance(queryDescriptor,d.descriptor));
-        if(best<Infinity) results.push({file,distance:best});
-      }catch(err){}
-    }
-    results.sort((a,b)=>a.distance-b.distance);
-    renderResults(results);
-    setStatus("Selesai. "+results.length+" foto memiliki setidaknya satu wajah.",100);
-  }catch(err){
-    setStatus("Terjadi masalah: "+err.message,0);
-    $("resultsGrid").innerHTML='<div class="empty">Pastikan selfie memiliki wajah yang terlihat jelas, lalu coba lagi.</div>';
-  }finally{
-    clearBtn.disabled=false; updateButton();
-  }
-});
-
-function renderResults(results){
-  if(!results.length){
-    $("resultInfo").textContent="Tidak ada foto berwajah";
-    $("resultsGrid").innerHTML='<div class="empty">Tidak ada wajah yang berhasil diproses.</div>'; return;
-  }
-  const matched=results.filter(x=>x.distance<=THRESHOLD);
-  const shown=results.slice(0,30);
-  $("resultInfo").textContent=matched.length+" cocok kuat · "+results.length+" foto berwajah";
-  $("resultsGrid").innerHTML=shown.map((r,i)=>{
-    const url=URL.createObjectURL(r.file), score=distanceToScore(r.distance), isMatch=r.distance<=THRESHOLD;
-    return '<article class="result">'+
-      '<img src="'+url+'" alt="Hasil '+(i+1)+'" loading="lazy">'+
-      '<div class="result-body">'+
-        '<div class="score '+(isMatch?"":"candidate")+'">'+(isMatch?"✓ Kemungkinan cocok":"• Kandidat")+" · "+score+"%"+'</div>'+
-        '<div class="meta">Jarak wajah: '+r.distance.toFixed(3)+'</div>'+
-        '<div class="meta">'+escapeHtml(r.file.name)+'</div>'+
-      '</div></article>';
-  }).join("");
-}
+const MODEL_URL="https://justadudewhohacks.github.io/face-api.js/models",DB_NAME="fotomu_local_db_v1",STORE="photos",EVENT_KEY="fotomu_admin_events_v1";
+const eventId=new URLSearchParams(location.search).get("id"),$=id=>document.getElementById(id);let queryFile=null,dbPhotos=[],objectUrls=[];
+function setStatus(t,p=0,show=true){$("status").style.display=show?"block":"none";$("statusText").textContent=t;$("statusPct").textContent=Math.round(p)+"%";$("bar").style.width=p+"%"}
+function openDB(){return new Promise((resolve,reject)=>{const r=indexedDB.open(DB_NAME,1);r.onupgradeneeded=()=>{const db=r.result;if(!db.objectStoreNames.contains(STORE)){const s=db.createObjectStore(STORE,{keyPath:"id"});s.createIndex("eventId","eventId")}};r.onsuccess=()=>resolve(r.result);r.onerror=()=>reject(r.error)})}
+async function getPhotos(){const db=await openDB();return new Promise((resolve,reject)=>{const tx=db.transaction(STORE,"readonly"),r=tx.objectStore(STORE).index("eventId").getAll(eventId);r.onsuccess=()=>resolve(r.result.sort((a,b)=>b.createdAt-a.createdAt));r.onerror=()=>reject(r.error)})}
+function loadImage(file){return new Promise((resolve,reject)=>{const u=URL.createObjectURL(file),img=new Image();img.onload=()=>{URL.revokeObjectURL(u);resolve(img)};img.onerror=()=>{URL.revokeObjectURL(u);reject(new Error("Foto tidak dapat dibaca"))};img.src=u})}
+async function descriptor(file){const img=await loadImage(file),opts=new faceapi.TinyFaceDetectorOptions({inputSize:416,scoreThreshold:.45}),ds=await faceapi.detectAllFaces(img,opts).withFaceLandmarks().withFaceDescriptors();if(!ds.length)throw new Error("Wajah tidak ditemukan pada foto.");ds.sort((a,b)=>b.detection.score-a.detection.score);return ds[0].descriptor}
+async function loadModels(){setStatus("Menyiapkan mesin pencarian wajah…",10);await Promise.all([faceapi.nets.tinyFaceDetector.loadFromUri(MODEL_URL),faceapi.nets.faceLandmark68Net.loadFromUri(MODEL_URL),faceapi.nets.faceRecognitionNet.loadFromUri(MODEL_URL)])}
+function esc(s){return String(s||"").replace(/[&<>"']/g,m=>({"&":"&amp;","<":"&lt;",">":"&gt;",""":"&quot;","'":"&#039;"}[m]))}
+function score(d){return Math.max(0,Math.min(100,Math.round((1-d/.8)*100)))}
+function clearUrls(){objectUrls.forEach(u=>URL.revokeObjectURL(u));objectUrls=[]}
+function renderResults(rows){clearUrls();if(!rows.length){$("resultInfo").textContent="";$("resultsGrid").innerHTML='<div class="empty">Belum ada foto yang cocok dari indeks wajah rak ini.</div>';return}const shown=rows.slice(0,40);$("resultInfo").textContent=rows.filter(x=>x.distance<=.52).length+" kemungkinan cocok · "+rows.length+" wajah terindeks";$("resultsGrid").innerHTML=shown.map((r,i)=>{const u=URL.createObjectURL(r.blob);objectUrls.push(u);return '<article class="result"><img src="'+u+'" loading="lazy" decoding="async" alt="Hasil '+(i+1)+'"><div class="body"><div class="score">✓ Kemiripan '+score(r.distance)+'%</div><div class="meta">'+esc(r.name)+'</div><div class="meta">Jarak wajah: '+r.distance.toFixed(3)+'</div></div></article>'}).join("")}
+$("query").addEventListener("change",e=>{queryFile=e.target.files[0]||null;if(queryFile){$("queryImg").src=URL.createObjectURL(queryFile);$("preview").style.display="block";$("searchBtn").disabled=false}});
+$("clearBtn").onclick=()=>{queryFile=null;$("query").value="";$("queryImg").src="";$("preview").style.display="none";$("resultsGrid").innerHTML='<div class="empty">Pilih foto wajah untuk memulai pencarian.</div>';$("resultInfo").textContent="";setStatus("",0,false)};
+$("searchBtn").onclick=async()=>{if(!queryFile||!dbPhotos.length)return;$("searchBtn").disabled=true;$("clearBtn").disabled=true;try{if(!dbPhotos.some(p=>Array.isArray(p.faceDescriptors)&&p.faceDescriptors.length))throw new Error("Indeks wajah belum dibuat untuk rak ini. Minta admin membuat indeks wajah terlebih dahulu.");await loadModels();setStatus("Menganalisis foto wajah Anda…",35);const q=await descriptor(queryFile);const rows=[];for(const p of dbPhotos){if(!Array.isArray(p.faceDescriptors)||!p.faceDescriptors.length)continue;let best=Infinity;for(const arr of p.faceDescriptors){const d=faceapi.euclideanDistance(q,new Float32Array(arr));if(d<best)best=d}if(best<Infinity)rows.push({blob:p.blob,name:p.name,distance:best})}rows.sort((a,b)=>a.distance-b.distance);renderResults(rows);setStatus("Selesai. "+rows.length+" foto memiliki indeks wajah.",100)}catch(e){setStatus(e.message,0);$("resultsGrid").innerHTML='<div class="empty">'+esc(e.message)+'</div>'}finally{$("searchBtn").disabled=!queryFile;$("clearBtn").disabled=false}};
+(async()=>{try{const events=JSON.parse(localStorage.getItem(EVENT_KEY)||"[]"),e=events.find(x=>x.id===eventId);if(!e)throw new Error("Rak kegiatan tidak ditemukan.");dbPhotos=await getPhotos();$("activityName").textContent=e.name;$("activityMeta").textContent=(e.date||"Tanggal belum diisi")+" · "+dbPhotos.length+" foto di rak · indeks wajah akan digunakan saat pencarian";$("back").href="rak.html?id="+encodeURIComponent(eventId)}catch(e){$("activityName").textContent="Rak tidak tersedia";$("activityMeta").textContent=e.message;$("searchBtn").disabled=true}})();
 </script>
-<script>
-if ("serviceWorker" in navigator && location.protocol !== "file:") {
-  window.addEventListener("load", () => navigator.serviceWorker.register("./sw.js").catch(()=>{}));
-}
-</script>
-</body>
-</html>
+<script>if("serviceWorker"in navigator&&location.protocol!=="file:"){window.addEventListener("load",()=>navigator.serviceWorker.register("./sw.js").catch(()=>{}))}</script>
+</body></html>

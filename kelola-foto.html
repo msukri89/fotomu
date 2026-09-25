@@ -4,9 +4,9 @@
 </style></head><body><div class="app">
 <div class="top"><div class="brand">Foto<span>mu</span></div><a class="back" href="admin.html">← Kembali ke Admin</a></div>
 <section class="hero"><small>Fotomu · Phase 3B</small><h1 id="title">Kelola foto kegiatan</h1><p id="desc">Pilih banyak foto sekaligus. Foto akan dikompres ringan sebelum disimpan. Target maksimal 2048px dengan kualitas tinggi agar tetap nyaman untuk WhatsApp dan media sosial.</p><div class="meta"><span class="pill" id="datePill">📅 —</span><span class="pill" id="countPill">📸 0 foto</span><span class="pill">💾 Penyimpanan lokal</span><span class="pill">🗜️ Kompresi ringan</span></div></section>
-<section class="card"><label class="drop" for="photos"><strong>📷 Pilih banyak foto kegiatan</strong><span>JPG, PNG atau WebP · pilih puluhan sampai ratusan sekaligus</span></label><input id="photos" type="file" accept="image/*" multiple><div class="actions"><button id="upload" class="primary" disabled>＋ Tambahkan foto</button><button id="clearAll" class="danger">Hapus semua foto</button></div><div id="status" class="status"></div><div id="progress" class="progress"><div id="bar" class="bar"></div></div></section>
+<section class="card"><label class="drop" for="photos"><strong>📷 Pilih banyak foto kegiatan</strong><span>JPG, PNG atau WebP · pilih puluhan sampai ratusan sekaligus</span></label><input id="photos" type="file" accept="image/*" multiple><div class="actions"><button id="upload" class="primary" disabled>＋ Tambahkan foto</button><button id="optimizeOld" class="primary">🗜️ Optimalkan foto lama</button><button id="clearAll" class="danger">Hapus semua foto</button></div><div id="status" class="status"></div><div id="progress" class="progress"><div id="bar" class="bar"></div></div></section>
 <div class="head"><h2>Foto di rak</h2><span id="subCount">0 foto</span></div><div id="grid" class="grid"></div>
-<p class="note"><b>Phase 3B.2:</b> foto baru dikompres ringan sebelum disimpan: sisi terpanjang maksimal 2048px, JPEG kualitas tinggi sekitar 84%. Proses satu per satu agar RAM browser tidak melonjak. Foto kecil yang sudah ringan dipertahankan agar kualitas tidak turun tanpa perlu. File belum dikirim ke storage online.</p>
+<p class="note"><b>Phase 3B.3:</b> foto baru dikompres ringan sebelum disimpan: sisi terpanjang maksimal 2048px, JPEG kualitas tinggi sekitar 84%. Proses satu per satu agar RAM browser tidak melonjak. Foto kecil yang sudah ringan dipertahankan agar kualitas tidak turun tanpa perlu. File belum dikirim ke storage online.</p>
 </div>
 <script>
 const EVENT_KEY="fotomu_admin_events_v1",DB_NAME="fotomu_local_db_v1",STORE="photos",eventId=new URLSearchParams(location.search).get("id");
@@ -55,6 +55,32 @@ $("upload").addEventListener("click",async()=>{
   }catch(e){$("status").textContent="Gagal memproses foto ke-"+(saved+1)+": "+e.message}
   finally{$("clearAll").disabled=false;$("upload").disabled=true}
 });
-$("clearAll").addEventListener("click",async()=>{if(!confirm("Hapus semua foto dari rak kegiatan ini?"))return;$("clearAll").disabled=true;await deleteAll();$("status").textContent="Semua foto di rak telah dihapus.";await refresh();$("clearAll").disabled=false});
+async function getPhotoKeys(){const db=await openDB();return new Promise((resolve,reject)=>{const tx=db.transaction(STORE,"readonly"),idx=tx.objectStore(STORE).index("eventId"),r=idx.getAllKeys(eventId);r.onsuccess=()=>resolve(r.result);r.onerror=()=>reject(r.error)})}
+async function getPhotoById(id){const db=await openDB();return new Promise((resolve,reject)=>{const tx=db.transaction(STORE,"readonly"),r=tx.objectStore(STORE).get(id);r.onsuccess=()=>resolve(r.result);r.onerror=()=>reject(r.error)})}
+async function updatePhoto(item){const db=await openDB();return new Promise((resolve,reject)=>{const tx=db.transaction(STORE,"readwrite");tx.objectStore(STORE).put(item);tx.oncomplete=resolve;tx.onerror=()=>reject(tx.error)})}
+$("optimizeOld").addEventListener("click",async()=>{
+  if(!confirm("Optimalkan foto lama satu per satu? Foto asli tidak tersedia untuk dipulihkan setelah penggantian versi lokal. Lanjutkan?"))return;
+  $("optimizeOld").disabled=true;$("upload").disabled=true;$("clearAll").disabled=true;$("progress").style.display="block";
+  let keys=await getPhotoKeys(),done=0,changed=0,oldBytes=0,newBytes=0;
+  try{
+    for(const id of keys){
+      const item=await getPhotoById(id); if(!item?.blob)continue;
+      const before=item.blob.size;oldBytes+=before;
+      if(item.compressed===true){newBytes+=before;done++;continue}
+      $("status").textContent="Mengoptimalkan foto lama "+(done+1)+" dari "+keys.length+"…";
+      const result=await compressPhoto(item.blob);
+      newBytes+=result.size;
+      await updatePhoto({...item,blob:result.blob,size:result.size,type:result.blob.type||"image/jpeg",width:result.width,height:result.height,originalSize:item.originalSize||before,compressed:true});
+      if(result.size<before)changed++;
+      done++;$("bar").style.width=Math.round(done/keys.length*100)+"%";
+      if(done%3===0)await new Promise(requestAnimationFrame);
+    }
+    const pct=oldBytes?Math.max(0,Math.round((1-newBytes/oldBytes)*100)):0;
+    $("bar").style.width="100%";$("status").textContent=done+" foto diperiksa, "+changed+" dioptimalkan. "+formatBytes(oldBytes)+" → "+formatBytes(newBytes)+" (hemat ±"+pct+"% dari versi lokal sebelum optimasi).";
+    await refresh();
+  }catch(e){$("status").textContent="Gagal mengoptimalkan: "+e.message}
+  finally{$("optimizeOld").disabled=false;$("upload").disabled=false;$("clearAll").disabled=false}
+});
+$("clearAll").addEventListener("click",async()=>{if(!confirm("Hapus semua foto dari rak kegiatan ini?"))return;$("clearAll").disabled=true;$("optimizeOld").disabled=true;await deleteAll();$("status").textContent="Semua foto di rak telah dihapus.";await refresh();$("clearAll").disabled=false});
 (async()=>{const e=getEvent();if(!e){$("title").textContent="Kegiatan tidak ditemukan";$("desc").textContent="ID kegiatan tidak ditemukan. Kembali ke Admin dan pilih kegiatan yang benar.";return}$("title").textContent="Kelola foto · "+e.name;$("datePill").textContent="📅 "+(e.date||"Tanggal belum diisi");await refresh()})().catch(e=>$("status").textContent="Gagal membuka penyimpanan: "+e.message);
 </script></body></html>

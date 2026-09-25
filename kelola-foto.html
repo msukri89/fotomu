@@ -9,14 +9,14 @@
 <p class="note"><b>Phase 3D:</b> setelah foto tersimpan, admin dapat membuat indeks wajah satu per satu. Indeks disimpan bersama data foto agar pencarian anggota tidak perlu menganalisis ulang seluruh foto.  foto baru dikompres ringan sebelum disimpan: sisi terpanjang maksimal 2048px, JPEG kualitas tinggi sekitar 84%. Proses satu per satu agar RAM browser tidak melonjak. Foto kecil yang sudah ringan dipertahankan agar kualitas tidak turun tanpa perlu. File belum dikirim ke storage online.</p>
 </div>
 <script>
-const EVENT_KEY="fotomu_admin_events_v1",DB_NAME="fotomu_local_db_v1",STORE="photos",eventId=new URLSearchParams(location.search).get("id");
+const EVENT_KEY="fotomu_admin_events_v1",DB_NAME="fotomu_local_db_v1",STORE="photos",FACE_STORE="faceIndex",eventId=new URLSearchParams(location.search).get("id");
 const MAX_SIDE=2048,JPEG_QUALITY=.84,KEEP_SMALL_BYTES=1200000;let selected=[];
 const $=id=>document.getElementById(id);
 function getEvent(){return JSON.parse(localStorage.getItem(EVENT_KEY)||"[]").find(e=>e.id===eventId)}
-function openDB(){return new Promise((resolve,reject)=>{const r=indexedDB.open(DB_NAME,1);r.onupgradeneeded=()=>{const db=r.result;if(!db.objectStoreNames.contains(STORE)){const s=db.createObjectStore(STORE,{keyPath:"id"});s.createIndex("eventId","eventId")}};r.onsuccess=()=>resolve(r.result);r.onerror=()=>reject(r.error)})}
+function openDB(){return new Promise((resolve,reject)=>{const r=indexedDB.open(DB_NAME,2);r.onupgradeneeded=()=>{const db=r.result;if(!db.objectStoreNames.contains(STORE)){const s=db.createObjectStore(STORE,{keyPath:"id"});s.createIndex("eventId","eventId")}if(!db.objectStoreNames.contains(FACE_STORE)){const f=db.createObjectStore(FACE_STORE,{keyPath:"id"});f.createIndex("eventId","eventId")}};r.onsuccess=()=>resolve(r.result);r.onerror=()=>reject(r.error)})}
 async function getPhotos(){const db=await openDB();return new Promise((resolve,reject)=>{const tx=db.transaction(STORE,"readonly"),idx=tx.objectStore(STORE).index("eventId"),r=idx.getAll(eventId);r.onsuccess=()=>resolve(r.result.sort((a,b)=>b.createdAt-a.createdAt));r.onerror=()=>reject(r.error)})}
 async function addPhoto(item){const db=await openDB();return new Promise((resolve,reject)=>{const tx=db.transaction(STORE,"readwrite");tx.objectStore(STORE).put(item);tx.oncomplete=resolve;tx.onerror=()=>reject(tx.error)})}
-async function deleteAll(){const db=await openDB();return new Promise((resolve,reject)=>{const tx=db.transaction(STORE,"readwrite"),store=tx.objectStore(STORE),idx=store.index("eventId"),r=idx.getAllKeys(eventId);r.onsuccess=()=>r.result.forEach(k=>store.delete(k));tx.oncomplete=resolve;tx.onerror=()=>reject(tx.error)})}
+async function deleteAll(){const db=await openDB();return new Promise((resolve,reject)=>{const tx=db.transaction([STORE,FACE_STORE],"readwrite"),store=tx.objectStore(STORE),faces=tx.objectStore(FACE_STORE),idx=store.index("eventId"),fidx=faces.index("eventId"),r=idx.getAllKeys(eventId),fr=fidx.getAllKeys(eventId);r.onsuccess=()=>r.result.forEach(k=>store.delete(k));fr.onsuccess=()=>fr.result.forEach(k=>faces.delete(k));tx.oncomplete=resolve;tx.onerror=()=>reject(tx.error)})}
 function esc(s){return String(s).replace(/[&<>"']/g,m=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#039;"}[m]))}
 function formatBytes(n){if(n<1024)return n+" B";if(n<1024*1024)return (n/1024).toFixed(0)+" KB";return (n/1024/1024).toFixed(2)+" MB"}
 function render(list){$("grid").innerHTML=list.length?list.map((p,i)=>{const u=URL.createObjectURL(p.blob);return '<article class="photo"><img src="'+u+'" loading="lazy" decoding="async" alt=""><div class="caption"><b>'+esc(p.name)+'</b><span>Foto '+String(list.length-i).padStart(3,"0")+' · '+formatBytes(p.size||p.blob.size)+'</span></div></article>'}).join(""):'<div class="empty"><b>Belum ada foto.</b><br>Pilih foto kegiatan di atas untuk mengisi rak.</div>';$("countPill").textContent="📸 "+list.length+" foto";$("subCount").textContent=list.length+" foto"}
@@ -57,7 +57,7 @@ $("upload").addEventListener("click",async()=>{
 });
 async function getPhotoKeys(){const db=await openDB();return new Promise((resolve,reject)=>{const tx=db.transaction(STORE,"readonly"),idx=tx.objectStore(STORE).index("eventId"),r=idx.getAllKeys(eventId);r.onsuccess=()=>resolve(r.result);r.onerror=()=>reject(r.error)})}
 async function getPhotoById(id){const db=await openDB();return new Promise((resolve,reject)=>{const tx=db.transaction(STORE,"readonly"),r=tx.objectStore(STORE).get(id);r.onsuccess=()=>resolve(r.result);r.onerror=()=>reject(r.error)})}
-async function updatePhoto(item){const db=await openDB();return new Promise((resolve,reject)=>{const tx=db.transaction(STORE,"readwrite");tx.objectStore(STORE).put(item);tx.oncomplete=resolve;tx.onerror=()=>reject(tx.error)})}
+async function updatePhoto(item){const db=await openDB();return new Promise((resolve,reject)=>{const tx=db.transaction(STORE,"readwrite");tx.objectStore(STORE).put(item);tx.oncomplete=resolve;tx.onerror=()=>reject(tx.error)})}async function saveFaceIndex(item,faces){const db=await openDB();return new Promise((resolve,reject)=>{const tx=db.transaction(FACE_STORE,"readwrite");tx.objectStore(FACE_STORE).put({id:item.id,eventId:item.eventId,name:item.name,createdAt:item.createdAt,faceDescriptors:faces,faceIndexedAt:Date.now(),faceIndexVersion:1});tx.oncomplete=resolve;tx.onerror=()=>reject(tx.error)})}
 $("optimizeOld").addEventListener("click",async()=>{
   if(!confirm("Optimalkan foto lama satu per satu? Foto asli tidak tersedia untuk dipulihkan setelah penggantian versi lokal. Lanjutkan?"))return;
   $("optimizeOld").disabled=true;$("upload").disabled=true;$("clearAll").disabled=true;$("progress").style.display="block";
@@ -82,7 +82,7 @@ $("optimizeOld").addEventListener("click",async()=>{
   finally{$("optimizeOld").disabled=false;$("upload").disabled=false;$("clearAll").disabled=false}
 });
 const MODEL_URL="https://justadudewhohacks.github.io/face-api.js/models";
-async function getAllPhotoItems(){const db=await openDB();return new Promise((resolve,reject)=>{const tx=db.transaction(STORE,"readonly"),idx=tx.objectStore(STORE).index("eventId"),r=idx.getAll(eventId);r.onsuccess=()=>resolve(r.result.sort((a,b)=>b.createdAt-a.createdAt));r.onerror=()=>reject(r.error)})}
+async function getPhotoKeys(){const db=await openDB();return new Promise((resolve,reject)=>{const tx=db.transaction(STORE,"readonly"),idx=tx.objectStore(STORE).index("eventId"),r=idx.getAllKeys(eventId);r.onsuccess=()=>resolve(r.result);r.onerror=()=>reject(r.error)})}async function getPhotoById(id){const db=await openDB();return new Promise((resolve,reject)=>{const tx=db.transaction(STORE,"readonly"),r=tx.objectStore(STORE).get(id);r.onsuccess=()=>resolve(r.result);r.onerror=()=>reject(r.error)})}
 async function getFaceDescriptorList(blob){const u=URL.createObjectURL(blob),img=new Image();try{await new Promise((res,rej)=>{img.onload=res;img.onerror=rej;img.src=u});const opts=new faceapi.TinyFaceDetectorOptions({inputSize:416,scoreThreshold:.45});const ds=await faceapi.detectAllFaces(img,opts).withFaceLandmarks().withFaceDescriptors();return ds.map(d=>Array.from(d.descriptor))}finally{URL.revokeObjectURL(u)}}
 async function loadFaceModelsForIndex(){await Promise.all([faceapi.nets.tinyFaceDetector.loadFromUri(MODEL_URL),faceapi.nets.faceLandmark68Net.loadFromUri(MODEL_URL),faceapi.nets.faceRecognitionNet.loadFromUri(MODEL_URL)])}
 $("indexFaces").addEventListener("click",async()=>{
@@ -90,15 +90,16 @@ $("indexFaces").addEventListener("click",async()=>{
   $("indexFaces").disabled=true;$("upload").disabled=true;$("optimizeOld").disabled=true;$("clearAll").disabled=true;$("progress").style.display="block";
   try{
     $("status").textContent="Menyiapkan mesin pengenalan wajah…";await loadFaceModelsForIndex();
-    const items=await getAllPhotoItems();let done=0,withFace=0,noFace=0,failed=0;
-    for(const item of items){
-      $("status").textContent="Membuat indeks wajah "+(done+1)+" dari "+items.length+"…";
+    const keys=await getPhotoKeys();let done=0,withFace=0,noFace=0,failed=0;
+    for(const id of keys){
+      const item=await getPhotoById(id); if(!item?.blob){done++;continue}
+      $("status").textContent="Membuat indeks wajah "+(done+1)+" dari "+keys.length+"…";
       try{
         const faces=await getFaceDescriptorList(item.blob);
-        await updatePhoto({...item,faceDescriptors:faces,faceIndexedAt:Date.now(),faceIndexVersion:1});
+        await saveFaceIndex(item,faces);
         if(faces.length)withFace++;else noFace++;
       }catch(e){failed++}
-      done++;$("bar").style.width=Math.round(done/items.length*100)+"%";
+      done++;$("bar").style.width=Math.round(done/keys.length*100)+"%";
       if(done%2===0)await new Promise(requestAnimationFrame);
     }
     $("bar").style.width="100%";

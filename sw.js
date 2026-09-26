@@ -1,4 +1,4 @@
-const CACHE = "fotomu-phase4b-v1";
+const CACHE = "fotomu-phase4b-v2";
 const APP = ["./","./index.html","./kegiatan.html","./rak.html","./kelola-foto.html","./admin.html","./upload.html","./manifest.json"];
 self.addEventListener("install", e => e.waitUntil(caches.open(CACHE).then(c => c.addAll(APP)).then(() => self.skipWaiting())));
 self.addEventListener("activate", e => e.waitUntil(

@@ -1,0 +1,113 @@
+<!doctype html><html lang="id"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><meta name="theme-color" content="#0f766e"><title>Fotomu — Kelola Foto</title>
+<style>
+:root{--g:#0f766e;--gd:#115e59;--bg:#f4f7f6;--text:#17201f;--muted:#687572;--line:#dfe7e5;--danger:#b42318}*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--text);font-family:Inter,system-ui,-apple-system,"Segoe UI",sans-serif}.app{max-width:1120px;margin:auto;padding:18px 16px 55px}.top{display:flex;justify-content:space-between;gap:12px;margin-bottom:18px}.brand{font-size:25px;font-weight:850}.brand span{color:var(--g)}.back{color:var(--g);text-decoration:none;font-size:12px;font-weight:800;background:#fff;border:1px solid var(--line);padding:9px 12px;border-radius:11px}.hero{background:linear-gradient(135deg,var(--g),var(--gd));color:#fff;border-radius:25px;padding:26px;margin-bottom:18px}.hero small{color:#bdf1ea;font-weight:850;letter-spacing:.08em;text-transform:uppercase}.hero h1{font-size:28px;margin:7px 0}.hero p{margin:0;color:#dcfffb;font-size:14px;line-height:1.6}.meta{display:flex;gap:8px;flex-wrap:wrap;margin-top:16px}.pill{background:#ffffff1f;border:1px solid #ffffff30;padding:7px 10px;border-radius:999px;font-size:11px}.card{background:#fff;border:1px solid var(--line);border-radius:19px;padding:18px;box-shadow:0 7px 24px #17201f0d}.drop{display:block;border:2px dashed #b8ded8;border-radius:16px;padding:25px 16px;text-align:center;background:#fbfdfd;cursor:pointer}.drop strong{display:block;font-size:14px;margin-bottom:5px}.drop span{font-size:11px;color:var(--muted)}input[type=file]{display:none}.actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:13px}button{border:0;border-radius:12px;padding:11px 14px;font:inherit;font-size:12px;font-weight:850;cursor:pointer}.primary{background:var(--g);color:#fff}.danger{background:#fff;color:var(--danger);border:1px solid #f0c5c1}.status{margin-top:12px;font-size:11px;color:var(--g);min-height:17px}.progress{height:7px;background:#e9efee;border-radius:99px;overflow:hidden;margin-top:7px;display:none}.bar{height:100%;width:0;background:#14b8a6;transition:width .2s}.head{display:flex;justify-content:space-between;gap:10px;margin:20px 2px 11px}.head h2{font-size:19px;margin:0}.head span{font-size:11px;color:var(--muted)}.grid{display:grid;grid-template-columns:repeat(4,1fr);gap:12px}.photo{background:#fff;border:1px solid var(--line);border-radius:15px;overflow:hidden}.photo img{width:100%;aspect-ratio:1;object-fit:cover;display:block;background:#edf2f1}.caption{padding:9px 10px}.caption b{display:block;font-size:11px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.caption span{font-size:10px;color:var(--muted)}.empty{grid-column:1/-1;background:#fff;border:1px dashed var(--line);border-radius:17px;text-align:center;padding:38px 18px;color:var(--muted);font-size:12px}.note{font-size:11px;color:var(--muted);line-height:1.6;margin-top:17px}@media(max-width:850px){.grid{grid-template-columns:repeat(3,1fr)}}@media(max-width:600px){.grid{grid-template-columns:repeat(2,1fr)}}
+</style></head><body><div class="app">
+<div class="top"><div class="brand">Foto<span>mu</span></div><a class="back" href="admin.html">← Kembali ke Admin</a></div>
+<section class="hero"><small>Fotomu · Phase 3B</small><h1 id="title">Kelola foto kegiatan</h1><p id="desc">Pilih banyak foto sekaligus. Foto akan dikompres ringan sebelum disimpan. Target maksimal 2048px dengan kualitas tinggi agar tetap nyaman untuk WhatsApp dan media sosial.</p><div class="meta"><span class="pill" id="datePill">📅 —</span><span class="pill" id="countPill">📸 0 foto</span><span class="pill">💾 Penyimpanan lokal</span><span class="pill">🗜️ Kompresi ringan</span></div></section>
+<section class="card"><label class="drop" for="photos"><strong>📷 Pilih banyak foto kegiatan</strong><span>JPG, PNG atau WebP · pilih puluhan sampai ratusan sekaligus</span></label><input id="photos" type="file" accept="image/*" multiple><div class="actions"><button id="upload" class="primary" disabled>＋ Tambahkan foto</button><button id="optimizeOld" class="primary">🗜️ Optimalkan foto lama</button><button id="indexFaces" class="primary">🧠 Buat indeks wajah</button><button id="clearAll" class="danger">Hapus semua foto</button></div><div id="status" class="status"></div><div id="progress" class="progress"><div id="bar" class="bar"></div></div></section>
+<div class="head"><h2>Foto di rak</h2><span id="subCount">0 foto</span></div><div id="grid" class="grid"></div>
+<p class="note"><b>Phase 3D:</b> setelah foto tersimpan, admin dapat membuat indeks wajah satu per satu. Indeks disimpan bersama data foto agar pencarian anggota tidak perlu menganalisis ulang seluruh foto.  foto baru dikompres ringan sebelum disimpan: sisi terpanjang maksimal 2048px, JPEG kualitas tinggi sekitar 84%. Proses satu per satu agar RAM browser tidak melonjak. Foto kecil yang sudah ringan dipertahankan agar kualitas tidak turun tanpa perlu. File belum dikirim ke storage online.</p>
+</div>
+<script>
+const EVENT_KEY="fotomu_admin_events_v1",DB_NAME="fotomu_local_db_v1",STORE="photos",FACE_STORE="faceIndex",eventId=new URLSearchParams(location.search).get("id");
+const MAX_SIDE=2048,JPEG_QUALITY=.84,KEEP_SMALL_BYTES=1200000;let selected=[];
+const $=id=>document.getElementById(id);
+function getEvent(){return JSON.parse(localStorage.getItem(EVENT_KEY)||"[]").find(e=>e.id===eventId)}
+function openDB(){return new Promise((resolve,reject)=>{const r=indexedDB.open(DB_NAME,2);r.onupgradeneeded=()=>{const db=r.result;if(!db.objectStoreNames.contains(STORE)){const s=db.createObjectStore(STORE,{keyPath:"id"});s.createIndex("eventId","eventId")}if(!db.objectStoreNames.contains(FACE_STORE)){const f=db.createObjectStore(FACE_STORE,{keyPath:"id"});f.createIndex("eventId","eventId")}};r.onsuccess=()=>resolve(r.result);r.onerror=()=>reject(r.error)})}
+async function getPhotos(){const db=await openDB();return new Promise((resolve,reject)=>{const tx=db.transaction(STORE,"readonly"),idx=tx.objectStore(STORE).index("eventId"),r=idx.getAll(eventId);r.onsuccess=()=>resolve(r.result.sort((a,b)=>b.createdAt-a.createdAt));r.onerror=()=>reject(r.error)})}
+async function addPhoto(item){const db=await openDB();return new Promise((resolve,reject)=>{const tx=db.transaction(STORE,"readwrite");tx.objectStore(STORE).put(item);tx.oncomplete=resolve;tx.onerror=()=>reject(tx.error)})}
+async function deleteAll(){const db=await openDB();return new Promise((resolve,reject)=>{const tx=db.transaction([STORE,FACE_STORE],"readwrite"),store=tx.objectStore(STORE),faces=tx.objectStore(FACE_STORE),idx=store.index("eventId"),fidx=faces.index("eventId"),r=idx.getAllKeys(eventId),fr=fidx.getAllKeys(eventId);r.onsuccess=()=>r.result.forEach(k=>store.delete(k));fr.onsuccess=()=>fr.result.forEach(k=>faces.delete(k));tx.oncomplete=resolve;tx.onerror=()=>reject(tx.error)})}
+function esc(s){return String(s).replace(/[&<>"']/g,m=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#039;"}[m]))}
+function formatBytes(n){if(n<1024)return n+" B";if(n<1024*1024)return (n/1024).toFixed(0)+" KB";return (n/1024/1024).toFixed(2)+" MB"}
+function render(list){$("grid").innerHTML=list.length?list.map((p,i)=>{const u=URL.createObjectURL(p.blob);return '<article class="photo"><img src="'+u+'" loading="lazy" decoding="async" alt=""><div class="caption"><b>'+esc(p.name)+'</b><span>Foto '+String(list.length-i).padStart(3,"0")+' · '+formatBytes(p.size||p.blob.size)+'</span></div></article>'}).join(""):'<div class="empty"><b>Belum ada foto.</b><br>Pilih foto kegiatan di atas untuk mengisi rak.</div>';$("countPill").textContent="📸 "+list.length+" foto";$("subCount").textContent=list.length+" foto"}
+async function refresh(){render(await getPhotos())}
+function loadImage(file){return new Promise((resolve,reject)=>{const url=URL.createObjectURL(file),img=new Image();img.onload=()=>{URL.revokeObjectURL(url);resolve(img)};img.onerror=()=>{URL.revokeObjectURL(url);reject(new Error("Foto tidak dapat dibaca"))};img.src=url})}
+async function compressPhoto(file){
+  if(file.type==="image/jpeg" && file.size<=KEEP_SMALL_BYTES){
+    return {blob:file,size:file.size,width:null,height:null,compressed:false};
+  }
+  let source;
+  try{source=typeof createImageBitmap==="function"?await createImageBitmap(file,{imageOrientation:"from-image"}):await loadImage(file)}catch(_){source=await loadImage(file)}
+  const sw=source.width,sh=source.height,scale=Math.min(1,MAX_SIDE/Math.max(sw,sh)),w=Math.max(1,Math.round(sw*scale)),h=Math.max(1,Math.round(sh*scale));
+  const canvas=document.createElement("canvas");canvas.width=w;canvas.height=h;const ctx=canvas.getContext("2d",{alpha:false});
+  ctx.imageSmoothingEnabled=true;ctx.imageSmoothingQuality="high";ctx.fillStyle="#fff";ctx.fillRect(0,0,w,h);ctx.drawImage(source,0,0,w,h);
+  if(source.close)source.close();
+  const blob=await new Promise((resolve,reject)=>canvas.toBlob(b=>b?resolve(b):reject(new Error("Kompresi gagal")),"image/jpeg",JPEG_QUALITY));
+  return {blob,size:blob.size,width:w,height:h,compressed:true};
+}
+$("photos").addEventListener("change",e=>{selected=[...e.target.files];$("upload").disabled=!selected.length;$("status").textContent=selected.length?selected.length+" foto dipilih. Klik Tambahkan foto untuk kompres dan simpan.":""});
+$("upload").addEventListener("click",async()=>{
+  if(!selected.length)return;
+  $("upload").disabled=true;$("clearAll").disabled=true;$("progress").style.display="block";
+  const batch=selected.length;let saved=0,originalBytes=0,storedBytes=0;
+  try{
+    for(let i=0;i<batch;i++){
+      const f=selected[i];originalBytes+=f.size;
+      $("status").textContent="Memproses "+(i+1)+" dari "+batch+" · kompres foto…";
+      const result=await compressPhoto(f);storedBytes+=result.size;
+      await addPhoto({id:crypto.randomUUID(),eventId,name:f.name,type:result.blob.type||f.type,size:result.size,originalSize:f.size,width:result.width,height:result.height,compressed:result.compressed,blob:result.blob,createdAt:Date.now()+i});
+      saved++;$("bar").style.width=Math.round(saved/batch*100)+"%";
+      if(i%5===0)await new Promise(requestAnimationFrame);
+    }
+    const savedMB=(storedBytes/1024/1024).toFixed(2),origMB=(originalBytes/1024/1024).toFixed(2),pct=originalBytes?Math.max(0,Math.round((1-storedBytes/originalBytes)*100)):0;
+    $("bar").style.width="100%";$("status").textContent=batch+" foto berhasil diproses. "+origMB+" MB → "+savedMB+" MB (hemat ±"+pct+"%).";
+    selected=[];$("photos").value="";await refresh();
+  }catch(e){$("status").textContent="Gagal memproses foto ke-"+(saved+1)+": "+e.message}
+  finally{$("clearAll").disabled=false;$("upload").disabled=true}
+});
+async function getPhotoKeys(){const db=await openDB();return new Promise((resolve,reject)=>{const tx=db.transaction(STORE,"readonly"),idx=tx.objectStore(STORE).index("eventId"),r=idx.getAllKeys(eventId);r.onsuccess=()=>resolve(r.result);r.onerror=()=>reject(r.error)})}
+async function getPhotoById(id){const db=await openDB();return new Promise((resolve,reject)=>{const tx=db.transaction(STORE,"readonly"),r=tx.objectStore(STORE).get(id);r.onsuccess=()=>resolve(r.result);r.onerror=()=>reject(r.error)})}
+async function updatePhoto(item){const db=await openDB();return new Promise((resolve,reject)=>{const tx=db.transaction(STORE,"readwrite");tx.objectStore(STORE).put(item);tx.oncomplete=resolve;tx.onerror=()=>reject(tx.error)})}async function deleteFaceIndex(id){const db=await openDB();return new Promise((resolve,reject)=>{const tx=db.transaction(FACE_STORE,"readwrite");tx.objectStore(FACE_STORE).delete(id);tx.oncomplete=resolve;tx.onerror=()=>reject(tx.error)})}async function saveFaceIndex(item,faces){const db=await openDB();return new Promise((resolve,reject)=>{const tx=db.transaction(FACE_STORE,"readwrite");tx.objectStore(FACE_STORE).put({id:item.id,eventId:item.eventId,name:item.name,createdAt:item.createdAt,faceDescriptors:faces,faceIndexedAt:Date.now(),faceIndexVersion:3});tx.oncomplete=resolve;tx.onerror=()=>reject(tx.error)})}
+$("optimizeOld").addEventListener("click",async()=>{
+  if(!confirm("Optimalkan foto lama satu per satu? Foto asli tidak tersedia untuk dipulihkan setelah penggantian versi lokal. Lanjutkan?"))return;
+  $("optimizeOld").disabled=true;$("upload").disabled=true;$("clearAll").disabled=true;$("progress").style.display="block";
+  let keys=await getPhotoKeys(),done=0,changed=0,oldBytes=0,newBytes=0;
+  try{
+    for(const id of keys){
+      const item=await getPhotoById(id); if(!item?.blob)continue;
+      const before=item.blob.size;oldBytes+=before;
+      if(item.compressed===true){newBytes+=before;done++;continue}
+      $("status").textContent="Mengoptimalkan foto lama "+(done+1)+" dari "+keys.length+"…";
+      const result=await compressPhoto(item.blob);
+      newBytes+=result.size;
+      await updatePhoto({...item,blob:result.blob,size:result.size,type:result.blob.type||"image/jpeg",width:result.width,height:result.height,originalSize:item.originalSize||before,compressed:true}); await deleteFaceIndex(id);
+      if(result.size<before)changed++;
+      done++;$("bar").style.width=Math.round(done/keys.length*100)+"%";
+      if(done%3===0)await new Promise(requestAnimationFrame);
+    }
+    const pct=oldBytes?Math.max(0,Math.round((1-newBytes/oldBytes)*100)):0;
+    $("bar").style.width="100%";$("status").textContent=done+" foto diperiksa, "+changed+" dioptimalkan. "+formatBytes(oldBytes)+" → "+formatBytes(newBytes)+" (hemat ±"+pct+"% dari versi lokal sebelum optimasi).";
+    await refresh();
+  }catch(e){$("status").textContent="Gagal mengoptimalkan: "+e.message}
+  finally{$("optimizeOld").disabled=false;$("upload").disabled=false;$("clearAll").disabled=false}
+});
+const MODEL_URL="https://justadudewhohacks.github.io/face-api.js/models";
+async function getPhotoKeys(){const db=await openDB();return new Promise((resolve,reject)=>{const tx=db.transaction(STORE,"readonly"),idx=tx.objectStore(STORE).index("eventId"),r=idx.getAllKeys(eventId);r.onsuccess=()=>resolve(r.result);r.onerror=()=>reject(r.error)})}async function getPhotoById(id){const db=await openDB();return new Promise((resolve,reject)=>{const tx=db.transaction(STORE,"readonly"),r=tx.objectStore(STORE).get(id);r.onsuccess=()=>resolve(r.result);r.onerror=()=>reject(r.error)})}
+async function getFaceDescriptorList(blob){const u=URL.createObjectURL(blob),img=new Image();try{await new Promise((res,rej)=>{img.onload=res;img.onerror=rej;img.src=u});const opts=new faceapi.SsdMobilenetv1Options({minConfidence:.6});const ds=await faceapi.detectAllFaces(img,opts).withFaceLandmarks().withFaceDescriptors();return ds.filter(d=>d.detection.score>=.6).filter(d=>{const w=d.detection.box.width,h=d.detection.box.height;return Math.min(w,h)>=80}).map(d=>({descriptor:Array.from(d.descriptor),score:d.detection.score,width:d.detection.box.width,height:d.detection.box.height,area:d.detection.box.width*d.detection.box.height}))}finally{URL.revokeObjectURL(u)}}
+async function loadFaceModelsForIndex(){await Promise.all([faceapi.nets.ssdMobilenetv1.loadFromUri(MODEL_URL),faceapi.nets.faceLandmark68Net.loadFromUri(MODEL_URL),faceapi.nets.faceRecognitionNet.loadFromUri(MODEL_URL)])}
+$("indexFaces").addEventListener("click",async()=>{
+  if(!confirm("Buat atau perbarui indeks wajah untuk semua foto di rak ini? Foto tidak diubah atau dihapus."))return;
+  $("indexFaces").disabled=true;$("upload").disabled=true;$("optimizeOld").disabled=true;$("clearAll").disabled=true;$("progress").style.display="block";
+  try{
+    $("status").textContent="Menyiapkan mesin pengenalan wajah…";await loadFaceModelsForIndex();
+    const keys=await getPhotoKeys();let done=0,withFace=0,noFace=0,failed=0;
+    for(const id of keys){
+      const item=await getPhotoById(id); if(!item?.blob){done++;continue}
+      $("status").textContent="Membuat indeks wajah "+(done+1)+" dari "+keys.length+"…";
+      try{
+        const faces=(await getFaceDescriptorList(item.blob)).map(f=>f.descriptor);
+        await saveFaceIndex(item,faces);
+        if(faces.length)withFace++;else noFace++;
+      }catch(e){failed++}
+      done++;$("bar").style.width=Math.round(done/keys.length*100)+"%";
+      if(done%2===0)await new Promise(requestAnimationFrame);
+    }
+    $("bar").style.width="100%";
+    $("status").textContent="Indeks selesai: "+done+" foto diperiksa · "+withFace+" memiliki wajah · "+noFace+" tanpa wajah · "+failed+" gagal.";
+    await refresh();
+  }catch(e){$("status").textContent="Gagal membuat indeks: "+e.message}
+  finally{$("indexFaces").disabled=false;$("upload").disabled=false;$("optimizeOld").disabled=false;$("clearAll").disabled=false}
+});
+$("clearAll").addEventListener("click",async()=>{if(!confirm("Hapus semua foto dari rak kegiatan ini?"))return;$("clearAll").disabled=true;$("optimizeOld").disabled=true;await deleteAll();$("status").textContent="Semua foto di rak telah dihapus.";await refresh();$("clearAll").disabled=false});
+(async()=>{const e=getEvent();if(!e){$("title").textContent="Kegiatan tidak ditemukan";$("desc").textContent="ID kegiatan tidak ditemukan. Kembali ke Admin dan pilih kegiatan yang benar.";return}$("title").textContent="Kelola foto · "+e.name;$("datePill").textContent="📅 "+(e.date||"Tanggal belum diisi");await refresh()})().catch(e=>$("status").textContent="Gagal membuka penyimpanan: "+e.message);
+</script><script src="https://cdn.jsdelivr.net/npm/face-api.js@0.22.2/dist/face-api.min.js"></script></body></html>

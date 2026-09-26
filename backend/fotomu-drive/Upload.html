@@ -95,7 +95,7 @@ button:disabled{opacity:.5;cursor:not-allowed}
 const CONFIG = <?!= JSON.stringify(config) ?>;
 const MAX_SIDE=2048, JPEG_QUALITY=.84, KEEP_SMALL_BYTES=1200000;
 const MODEL_URL='https://justadudewhohacks.github.io/face-api.js/models';
-const FACE_SCORE=.45, FACE_INPUT=320;
+const FACE_SCORE=.35, FACE_INPUT=416;
 const BLUR_REJECT=8, BLUR_WARN=25;
 const MIN_LONG_SIDE=480;
 const MAX_RETRY=3;
@@ -197,7 +197,7 @@ async function analyzePhoto(file){
     for(const d of faces){
       const box=d.box;
       const ratio=Math.max(box.width,box.height)/longSide;
-      if(d.score>=.55 && ratio>=.08) usefulFace=true;
+      if(d.score>=.45 && ratio>=.05) usefulFace=true;
       if(box.width>=80 && box.height>=80){
         const fs=blurScoreFromCanvas(faceCropCanvas(img,box));
         if(fs<BLUR_REJECT) faceBlurBad=true;

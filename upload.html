@@ -1,0 +1,113 @@
+<!doctype html>
+<html lang="id">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#0f766e">
+<title>Fotomu — Upload Foto</title>
+<style>
+:root{--g:#0f766e;--gd:#115e59;--soft:#e7f7f4;--bg:#f4f7f6;--text:#17201f;--muted:#687572;--line:#dfe7e5}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--text);font-family:Inter,system-ui,-apple-system,"Segoe UI",sans-serif}
+.app{max-width:1050px;margin:auto;padding:18px 16px 55px}
+.top{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:18px}
+.brand{font-size:25px;font-weight:850}.brand span{color:var(--g)}
+.back{color:var(--g);text-decoration:none;font-size:12px;font-weight:800;background:#fff;border:1px solid var(--line);padding:9px 12px;border-radius:11px}
+.hero{background:linear-gradient(135deg,var(--g),var(--gd));color:#fff;border-radius:25px;padding:26px;margin-bottom:16px}
+.hero small{color:#bdf1ea;font-weight:850;letter-spacing:.08em;text-transform:uppercase}.hero h1{font-size:28px;margin:7px 0}.hero p{margin:0;color:#dcfffb;font-size:14px;line-height:1.6}
+.meta{display:flex;gap:8px;flex-wrap:wrap;margin-top:15px}.pill{background:#ffffff1f;border:1px solid #ffffff30;padding:7px 10px;border-radius:999px;font-size:11px}
+.card{background:#fff;border:1px solid var(--line);border-radius:19px;padding:12px;box-shadow:0 7px 24px rgba(23,32,31,.05)}
+.status{padding:9px 10px;font-size:11px;color:var(--muted);background:#f8faf9;border:1px solid var(--line);border-radius:11px;margin-bottom:10px}
+iframe{display:block;width:100%;height:760px;border:0;border-radius:14px;background:var(--bg)}
+.note{font-size:11px;color:var(--muted);line-height:1.6;margin-top:14px}
+@media(max-width:600px){iframe{height:820px}.hero{padding:22px 19px}}
+</style>
+</head>
+<body>
+<div class="app">
+  <div class="top">
+    <div class="brand">Foto<span>mu</span></div>
+    <a id="back" class="back" href="kegiatan.html">← Kegiatan</a>
+  </div>
+
+  <section class="hero">
+    <small>Fotomu · Tim Multimedia</small>
+    <h1>Upload foto ke rak</h1>
+    <p>Pilih foto kegiatan. Fotomu akan mengompres foto di browser terlebih dahulu, lalu menyimpannya ke Google Drive.</p>
+    <div class="meta">
+      <span class="pill" id="eventPill">Kegiatan…</span>
+      <span class="pill" id="rakPill">Rak…</span>
+    </div>
+  </section>
+
+  <section class="card">
+    <div id="status" class="status">Menyiapkan uploader…</div>
+    <iframe id="uploader" title="Uploader foto Fotomu" allow="clipboard-read; clipboard-write"></iframe>
+  </section>
+
+  <p class="note">
+    <b>Phase 4B:</b> halaman Fotomu menjadi pintu masuk uploader tim, sementara proses penyimpanan tetap dijalankan oleh Apps Script HTML Service ke Google Drive + Google Sheets.
+  </p>
+</div>
+
+<script>
+const EVENT_KEY="fotomu_admin_events_v1";
+const DRIVE_UPLOAD_URL="https://script.google.com/macros/s/AKfycbw3-rfejF8KCKpQhAngz3Zforrl8bdv3CX8Tm6ztkyTwa5WJIqYzQEqLV0Y3TtGkWvdXw/exec";
+const eventId=new URLSearchParams(location.search).get("id");
+const $=id=>document.getElementById(id);
+
+(function init(){
+  if(!eventId){
+    $("status").textContent="ID kegiatan tidak ditemukan.";
+    return;
+  }
+
+  const events=JSON.parse(localStorage.getItem(EVENT_KEY)||"[]");
+  const event=events.find(e=>String(e.id)===String(eventId));
+
+  if(!event){
+    $("status").textContent="Kegiatan tidak ditemukan di browser ini.";
+    return;
+  }
+
+  const eventName=event.name||"Kegiatan";
+  const rakId="RAK01";
+  const rakName="Rak Utama";
+
+  $("eventPill").textContent="📅 "+eventName;
+  $("rakPill").textContent="📁 "+rakName;
+  $("back").href="rak.html?id="+encodeURIComponent(eventId);
+
+  const params=new URLSearchParams({
+    eventId:String(eventId),
+    eventName:eventName,
+    rakId:rakId,
+    rakName:rakName
+  });
+
+  $("uploader").src=DRIVE_UPLOAD_URL+"?"+params.toString();
+  $("status").textContent="Uploader siap. Masukkan PIN tim lalu pilih foto.";
+})();
+
+window.addEventListener("message",event=>{
+  const data=event.data||{};
+  if(data.source!=="fotomu-drive-upload")return;
+
+  if(data.type==="progress"){
+    $("status").textContent=data.message||"Upload sedang berjalan…";
+  }
+
+  if(data.type==="success"){
+    $("status").textContent="✓ Foto berhasil masuk Google Drive.";
+  }
+
+  if(data.type==="done"){
+    $("status").textContent=data.message||"Upload selesai.";
+  }
+
+  if(data.type==="error"){
+    $("status").textContent="✕ "+(data.message||"Upload gagal.");
+  }
+});
+</script>
+</body>
+</html>

@@ -1,0 +1,401 @@
+<!doctype html>
+<html lang="id">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<base target="_top">
+<script src="https://cdn.jsdelivr.net/npm/face-api.js@0.22.2/dist/face-api.min.js"></script>
+<style>
+:root{--g:#0f766e;--gd:#115e59;--bg:#f4f7f6;--text:#17201f;--muted:#687572;--line:#dfe7e5;--bad:#b42318;--warn:#9a6700}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--text);font-family:Inter,system-ui,-apple-system,"Segoe UI",sans-serif}
+.app{max-width:720px;margin:auto;padding:14px}
+.card{background:#fff;border:1px solid var(--line);border-radius:20px;padding:18px;box-shadow:0 7px 24px #17201f0d}
+.hero{background:linear-gradient(135deg,var(--g),var(--gd));color:#fff;border-radius:20px;padding:20px;margin-bottom:12px}
+.hero small{color:#bdf1ea;font-weight:800;text-transform:uppercase;letter-spacing:.08em}
+.hero h1{font-size:24px;margin:6px 0}
+.hero p{margin:0;color:#dcfffb;font-size:12px;line-height:1.55}
+.meta{margin-top:12px;display:flex;gap:7px;flex-wrap:wrap}
+.pill{background:#ffffff20;border:1px solid #ffffff30;border-radius:999px;padding:6px 9px;font-size:10px}
+label.drop{display:block;border:2px dashed #b8ded8;border-radius:15px;padding:24px;text-align:center;background:#fbfdfd;cursor:pointer}
+.drop strong{display:block;font-size:14px;margin-bottom:4px}
+.drop span{font-size:11px;color:var(--muted)}
+input[type=file]{display:none}
+.field{margin-top:12px}
+.field label{display:block;font-size:11px;font-weight:800;margin-bottom:5px}
+.field input{width:100%;padding:11px;border:1px solid var(--line);border-radius:11px;font:inherit}
+.actions{display:flex;gap:8px;margin-top:13px;flex-wrap:wrap}
+button{border:0;border-radius:11px;padding:11px 14px;font:inherit;font-size:12px;font-weight:850;cursor:pointer}
+.primary{background:var(--g);color:#fff}
+.secondary{background:#e9f4f2;color:var(--gd)}
+button:disabled{opacity:.5;cursor:not-allowed}
+.status{margin-top:13px;font-size:11px;color:var(--muted);line-height:1.55}
+.progress{height:7px;background:#e9efee;border-radius:99px;overflow:hidden;margin-top:7px}
+.bar{height:100%;width:0;background:#14b8a6;transition:width .2s}
+.queue{margin-top:13px;display:grid;gap:6px}
+.item{display:flex;align-items:center;gap:8px;padding:8px 10px;background:#f8faf9;border:1px solid var(--line);border-radius:10px;font-size:10px}
+.item .name{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.item .reason{font-size:9px;text-align:right}
+.item input{accent-color:var(--g)}
+.ok{color:var(--g);font-weight:800}.fail{color:var(--bad);font-weight:800}.warn{color:var(--warn);font-weight:800}
+.summary{display:grid;grid-template-columns:repeat(3,1fr);gap:7px;margin-top:12px}
+.sum{background:#f8faf9;border:1px solid var(--line);border-radius:11px;padding:9px;text-align:center}
+.sum b{display:block;font-size:17px}.sum span{font-size:9px;color:var(--muted)}
+.note{font-size:10px;color:var(--muted);line-height:1.55;margin:12px 2px 0}
+.hidden{display:none}
+</style>
+</head>
+<body>
+<div class="app">
+  <section class="hero">
+    <small>Fotomu · Upload Tim</small>
+    <h1>Upload foto ke rak</h1>
+    <p>Foto diperiksa di browser terlebih dahulu. Foto yang sangat blur atau tidak dapat dibaca tidak diteruskan. Hasil kompresi baru dikirim ke Google Drive.</p>
+    <div class="meta">
+      <span class="pill" id="eventPill">Kegiatan</span>
+      <span class="pill" id="rakPill">Rak</span>
+    </div>
+  </section>
+
+  <section class="card">
+    <label class="drop" for="photos">
+      <strong>📷 Pilih foto kegiatan</strong>
+      <span>Bisa memilih banyak foto sekaligus</span>
+    </label>
+    <input id="photos" type="file" accept="image/*" multiple>
+
+    <div class="field">
+      <label for="pin">PIN Upload Tim</label>
+      <input id="pin" type="password" inputmode="numeric" autocomplete="off" placeholder="Masukkan PIN tim">
+    </div>
+
+    <div class="actions">
+      <button id="check" class="secondary" disabled>🔍 Periksa kualitas foto</button>
+      <button id="start" class="primary" disabled>☁️ Kompres & Upload</button>
+    </div>
+
+    <div id="status" class="status">Belum ada foto dipilih.</div>
+    <div class="progress"><div id="bar" class="bar"></div></div>
+    <div id="summary" class="summary hidden">
+      <div class="sum"><b id="goodCount">0</b><span>siap upload</span></div>
+      <div class="sum"><b id="warnCount">0</b><span>perlu perhatian</span></div>
+      <div class="sum"><b id="badCount">0</b><span>ditolak</span></div>
+    </div>
+    <div id="queue" class="queue"></div>
+
+    <p class="note">
+      Pemeriksaan dilakukan lokal di browser. Deteksi wajah memakai Tiny Face Detector yang ringan untuk perangkat mobile.
+      Foto tanpa wajah tidak otomatis ditolak karena foto suasana/dokumentasi tetap bisa penting.
+      Upload gagal akan dicoba ulang sampai 3 kali sebelum ditandai gagal.
+    </p>
+  </section>
+</div>
+
+<script>
+const CONFIG = <?!= JSON.stringify(config) ?>;
+const MAX_SIDE=2048, JPEG_QUALITY=.84, KEEP_SMALL_BYTES=1200000;
+const MODEL_URL='https://justadudewhohacks.github.io/face-api.js/models';
+const FACE_SCORE=.45, FACE_INPUT=320;
+const BLUR_REJECT=8, BLUR_WARN=25;
+const MIN_LONG_SIDE=480;
+const MAX_RETRY=3;
+const $=id=>document.getElementById(id);
+let selected=[], analyzed=[], analysisReady=false, faceModelReady=false;
+
+$('eventPill').textContent='📅 '+(CONFIG.eventName||CONFIG.eventId||'Kegiatan');
+$('rakPill').textContent='📁 '+(CONFIG.rakName||CONFIG.rakId||'Rak Foto');
+
+function sleep(ms){return new Promise(r=>setTimeout(r,ms));}
+
+function loadImage(file){
+  return new Promise((resolve,reject)=>{
+    const u=URL.createObjectURL(file),img=new Image();
+    img.onload=()=>{URL.revokeObjectURL(u);resolve(img)};
+    img.onerror=()=>{URL.revokeObjectURL(u);reject(new Error('Foto tidak dapat dibaca'))};
+    img.src=u;
+  });
+}
+
+function canvasFromImage(img,maxSide=256){
+  const scale=Math.min(1,maxSide/Math.max(img.naturalWidth||img.width,img.naturalHeight||img.height));
+  const w=Math.max(1,Math.round((img.naturalWidth||img.width)*scale));
+  const h=Math.max(1,Math.round((img.naturalHeight||img.height)*scale));
+  const c=document.createElement('canvas');c.width=w;c.height=h;
+  const ctx=c.getContext('2d',{willReadFrequently:true});
+  ctx.drawImage(img,0,0,w,h);
+  return c;
+}
+
+function blurScoreFromCanvas(canvas){
+  const ctx=canvas.getContext('2d',{willReadFrequently:true});
+  const data=ctx.getImageData(0,0,canvas.width,canvas.height).data;
+  const w=canvas.width,h=canvas.height;
+  if(w<3||h<3)return 0;
+  const gray=new Float32Array(w*h);
+  for(let i=0,p=0;i<gray.length;i++,p+=4) gray[i]=.299*data[p]+.587*data[p+1]+.114*data[p+2];
+  let sum=0,sum2=0,n=0;
+  for(let y=1;y<h-1;y++){
+    for(let x=1;x<w-1;x++){
+      const i=y*w+x;
+      const lap=gray[i-w]+gray[i-1]+gray[i+1]+gray[i+w]-4*gray[i];
+      sum+=lap;sum2+=lap*lap;n++;
+    }
+  }
+  const mean=sum/n;
+  return Math.max(0,(sum2/n)-(mean*mean));
+}
+
+async function getFaceModel(){
+  if(faceModelReady)return;
+  $('status').textContent='Memuat pemeriksa wajah…';
+  try{
+    await faceapi.nets.tinyFaceDetector.loadFromUri(MODEL_URL);
+    faceModelReady=true;
+  }catch(e){
+    throw new Error('Pemeriksa wajah tidak dapat dimuat. Periksa koneksi internet lalu coba lagi.');
+  }
+}
+
+function faceCropCanvas(img,box){
+  const iw=img.naturalWidth||img.width, ih=img.naturalHeight||img.height;
+  const x=Math.max(0,Math.floor(box.x)), y=Math.max(0,Math.floor(box.y));
+  const w=Math.min(iw-x,Math.floor(box.width)), h=Math.min(ih-y,Math.floor(box.height));
+  const c=document.createElement('canvas');
+  c.width=Math.max(1,w);c.height=Math.max(1,h);
+  c.getContext('2d',{willReadFrequently:true}).drawImage(img,x,y,w,h,0,0,w,h);
+  return c;
+}
+
+async function analyzePhoto(file){
+  let img;
+  try{img=await loadImage(file)}catch(e){
+    return {file,status:'bad',reasons:['Foto tidak dapat dibaca'],faces:0,blur:0};
+  }
+
+  const iw=img.naturalWidth||img.width, ih=img.naturalHeight||img.height;
+  const longSide=Math.max(iw,ih);
+  const blur=blurScoreFromCanvas(canvasFromImage(img,256));
+  const reasons=[];
+  const warnings=[];
+  if(longSide<MIN_LONG_SIDE) reasons.push('Resolusi terlalu kecil');
+  if(blur<BLUR_REJECT) reasons.push('Sangat blur');
+
+  let faces=[];
+  try{
+    await getFaceModel();
+    faces=await faceapi.detectAllFaces(img,new faceapi.TinyFaceDetectorOptions({
+      inputSize:FACE_INPUT,scoreThreshold:FACE_SCORE
+    }));
+  }catch(e){
+    warnings.push('Deteksi wajah gagal, foto tetap dapat ditinjau');
+  }
+
+  if(faces.length===0){
+    warnings.push('Tidak ada wajah');
+  }else{
+    let usefulFace=false,faceBlurBad=false;
+    for(const d of faces){
+      const box=d.box;
+      const ratio=Math.max(box.width,box.height)/longSide;
+      if(d.score>=.55 && ratio>=.08) usefulFace=true;
+      if(box.width>=80 && box.height>=80){
+        const fs=blurScoreFromCanvas(faceCropCanvas(img,box));
+        if(fs<BLUR_REJECT) faceBlurBad=true;
+      }
+    }
+    if(!usefulFace)warnings.push('Wajah terdeteksi tetapi kecil/kurang jelas');
+    if(faceBlurBad)warnings.push('Wajah terdeteksi tetapi kurang tajam');
+  }
+
+  let status='good';
+  if(reasons.length)status='bad';
+  else if(warnings.length)status='warn';
+
+  return {file,status,reasons,warnings,faces:faces.length,blur,dimensions:iw+'×'+ih};
+}
+
+function renderAnalysis(){
+  $('queue').innerHTML='';
+  let good=0,warn=0,bad=0;
+  analyzed.forEach((r,index)=>{
+    if(r.status==='good')good++;
+    else if(r.status==='warn')warn++;
+    else bad++;
+    const row=document.createElement('div');
+    row.className='item';
+    const name=document.createElement('span');name.className='name';name.textContent=r.file.name;
+    const check=document.createElement('input');check.type='checkbox';check.dataset.index=index;
+    check.checked=r.status!=='bad';
+    check.disabled=r.status==='bad';
+    check.title=r.status==='bad'?'Tidak lolos pemeriksaan':'Masukkan ke antrean upload';
+    const reason=document.createElement('span');reason.className='reason '+(r.status==='bad'?'fail':r.status==='warn'?'warn':'ok');
+    if(r.status==='bad')reason.textContent='✕ '+r.reasons.join(', ');
+    else if(r.status==='warn')reason.textContent='⚠ '+r.warnings.join(', ');
+    else reason.textContent='✓ layak';
+    row.append(name,check,reason);
+    $('queue').appendChild(row);
+  });
+  $('goodCount').textContent=good;
+  $('warnCount').textContent=warn;
+  $('badCount').textContent=bad;
+  $('summary').classList.remove('hidden');
+  $('start').disabled=!analyzed.some((r,i)=>r.status!=='bad' && $('queue').querySelector('input[data-index="'+i+'"]')?.checked);
+}
+
+function selectedForUpload(){
+  return analyzed.filter((r,i)=>{
+    const cb=$('queue').querySelector('input[data-index="'+i+'"]');
+    return cb && cb.checked && !cb.disabled;
+  });
+}
+
+$('photos').addEventListener('change',e=>{
+  selected=[...e.target.files];
+  analyzed=[];analysisReady=false;
+  $('start').disabled=true;
+  $('check').disabled=!selected.length;
+  $('status').textContent=selected.length+' foto dipilih. Tekan “Periksa kualitas foto”.';
+  $('queue').innerHTML='';$('summary').classList.add('hidden');$('bar').style.width='0%';
+  notifyParent('progress',{message:selected.length+' foto dipilih.'});
+});
+
+$('check').addEventListener('click',async()=>{
+  if(!selected.length)return;
+  $('check').disabled=true;$('start').disabled=true;$('photos').disabled=true;$('pin').disabled=true;
+  analyzed=[];$('queue').innerHTML='';$('summary').classList.add('hidden');
+  try{
+    await getFaceModel();
+    for(let i=0;i<selected.length;i++){
+      $('status').textContent='Memeriksa '+(i+1)+' dari '+selected.length+'…';
+      const r=await analyzePhoto(selected[i]);
+      analyzed.push(r);
+      $('bar').style.width=Math.round((i+1)/selected.length*100)+'%';
+      if(i%4===0)await new Promise(requestAnimationFrame);
+    }
+    analysisReady=true;
+    renderAnalysis();
+    const bad=analyzed.filter(r=>r.status==='bad').length;
+    const warn=analyzed.filter(r=>r.status==='warn').length;
+    const good=analyzed.filter(r=>r.status==='good').length;
+    $('status').textContent='Pemeriksaan selesai: '+good+' layak · '+warn+' perlu perhatian · '+bad+' ditolak.';
+    $('photos').disabled=false;$('pin').disabled=false;$('check').disabled=false;
+  }catch(e){
+    $('status').textContent=e?.message||String(e);
+    $('photos').disabled=false;$('pin').disabled=false;$('check').disabled=false;
+  }
+});
+
+$('queue').addEventListener('change',e=>{
+  if(e.target.matches('input[type=checkbox]')){
+    $('start').disabled=selectedForUpload().length===0;
+  }
+});
+
+async function compressPhoto(file){
+  if(file.type==='image/jpeg' && file.size<=KEEP_SMALL_BYTES){
+    return {blob:file,size:file.size,compressed:false};
+  }
+  const source=await loadImage(file);
+  const sw=source.naturalWidth||source.width,sh=source.naturalHeight||source.height;
+  const scale=Math.min(1,MAX_SIDE/Math.max(sw,sh));
+  const w=Math.max(1,Math.round(sw*scale)),h=Math.max(1,Math.round(sh*scale));
+  const canvas=document.createElement('canvas');canvas.width=w;canvas.height=h;
+  const ctx=canvas.getContext('2d',{alpha:false});
+  ctx.imageSmoothingEnabled=true;ctx.imageSmoothingQuality='high';
+  ctx.fillStyle='#fff';ctx.fillRect(0,0,w,h);ctx.drawImage(source,0,0,w,h);
+  const blob=await new Promise((resolve,reject)=>canvas.toBlob(b=>b?resolve(b):reject(new Error('Kompresi gagal')),'image/jpeg',JPEG_QUALITY));
+  return {blob,size:blob.size,compressed:true};
+}
+
+function renameBlob(blob,originalName){
+  const base=(originalName||'foto').replace(/\.[^.]+$/,'');
+  return new File([blob],base+'.jpg',{type:'image/jpeg',lastModified:Date.now()});
+}
+
+function makeSingleFileForm(file,originalSize,photoId){
+  const form=document.createElement('form');form.style.display='none';
+  const fileInput=document.createElement('input');fileInput.type='file';fileInput.name='photo';
+  const dt=new DataTransfer();dt.items.add(file);fileInput.files=dt.files;
+  const fields={uploadPin:$('pin').value.trim(),eventId:CONFIG.eventId,eventName:CONFIG.eventName,rakId:CONFIG.rakId,rakName:CONFIG.rakName,photoId,originalSize:String(originalSize)};
+  form.appendChild(fileInput);
+  Object.entries(fields).forEach(([name,value])=>{const input=document.createElement('input');input.name=name;input.value=value||'';form.appendChild(input)});
+  document.body.appendChild(form);return form;
+}
+
+function notifyParent(type,payload={}){
+  if(window.parent&&window.parent!==window)window.parent.postMessage({source:'fotomu-drive-upload',type,...payload},'*');
+}
+
+function callUpload(form){
+  return new Promise((resolve,reject)=>{
+    google.script.run.withSuccessHandler(resolve).withFailureHandler(reject).processForm(form);
+  });
+}
+
+async function uploadWithRetry(file,originalSize,photoId){
+  let lastError;
+  for(let attempt=1;attempt<=MAX_RETRY;attempt++){
+    let form=null;
+    try{
+      form=makeSingleFileForm(file,originalSize,photoId);
+      const result=await callUpload(form);
+      form.remove();
+      return result;
+    }catch(e){
+      if(form)form.remove();
+      lastError=e;
+      if(attempt<MAX_RETRY)await sleep(attempt===1?2000:5000);
+    }
+  }
+  throw lastError||new Error('Upload gagal setelah 3 percobaan');
+}
+
+$('start').addEventListener('click',async()=>{
+  const queue=selectedForUpload();
+  if(!queue.length)return;
+  if(!$('pin').value.trim()){$('status').textContent='Masukkan PIN Upload Tim terlebih dahulu.';return;}
+  if(!CONFIG.eventId||!CONFIG.rakId){$('status').textContent='Kegiatan atau rak belum memiliki ID.';return;}
+
+  $('start').disabled=true;$('check').disabled=true;$('photos').disabled=true;$('pin').disabled=true;
+  const total=queue.length;let success=0,failed=0,originalBytes=0,storedBytes=0;
+  $('queue').innerHTML='';
+  const rows=new Map();
+
+  queue.forEach((r,index)=>{
+    const row=document.createElement('div');row.className='item';
+    const name=document.createElement('span');name.className='name';name.textContent=r.file.name;
+    const reason=document.createElement('span');reason.className='reason';reason.textContent='menunggu…';
+    row.append(name,reason);$('queue').appendChild(row);rows.set(r.file,row);
+  });
+
+  for(let i=0;i<total;i++){
+    const r=queue[i],row=rows.get(r.file),reason=row.querySelector('.reason');
+    try{
+      originalBytes+=r.file.size;
+      $('status').textContent='Memproses '+(i+1)+' dari '+total+' · kompres foto…';
+      notifyParent('progress',{message:'Memproses '+(i+1)+' dari '+total+' · kompres foto…'});
+      const compressed=await compressPhoto(r.file);
+      const uploadFile=renameBlob(compressed.blob,r.file.name);
+      const photoId=crypto.randomUUID();
+      $('status').textContent='Mengupload '+(i+1)+' dari '+total+' · retry otomatis bila perlu…';
+      notifyParent('progress',{message:'Mengupload '+(i+1)+' dari '+total+' ke Google Drive…'});
+      await uploadWithRetry(uploadFile,r.file.size,photoId);
+      success++;storedBytes+=compressed.size;
+      reason.textContent='✓ berhasil';reason.className='reason ok';
+    }catch(err){
+      failed++;reason.textContent='✕ '+(err?.message||'gagal');reason.className='reason fail';
+    }
+    $('bar').style.width=Math.round((i+1)/total*100)+'%';
+    await new Promise(requestAnimationFrame);
+  }
+
+  const origMB=(originalBytes/1024/1024).toFixed(2),storedMB=(storedBytes/1024/1024).toFixed(2);
+  const saved=originalBytes?Math.max(0,Math.round((1-storedBytes/originalBytes)*100)):0;
+  $('status').textContent='Selesai: '+success+' berhasil · '+failed+' gagal · '+origMB+' MB → '+storedMB+' MB · hemat ±'+saved+'%.';
+  notifyParent('done',{message:'Selesai: '+success+' berhasil · '+failed+' gagal · hemat ±'+saved+'%.',success,failed});
+  selected=[];analyzed=[];analysisReady=false;$('photos').value='';$('photos').disabled=false;$('pin').disabled=false;$('check').disabled=true;$('start').disabled=true;
+});
+
+</script>
+</body>
+</html>

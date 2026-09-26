@@ -162,11 +162,32 @@ function makeSingleFileForm(file, originalSize, photoId){
   return form;
 }
 
+function notifyParent(type,payload={}){
+  if(window.parent && window.parent!==window){
+    window.parent.postMessage({
+      source:'fotomu-drive-upload',
+      type,
+      ...payload
+    },'*');
+  }
+}
+
 function callUpload(form){
   return new Promise((resolve,reject)=>{
     google.script.run
-      .withSuccessHandler(resolve)
-      .withFailureHandler(reject)
+      .withSuccessHandler(result=>{
+        notifyParent('success',{
+          photoId:result?.photoId||'',
+          fileName:result?.fileName||''
+        });
+        resolve(result);
+      })
+      .withFailureHandler(error=>{
+        notifyParent('error',{
+          message:error?.message||String(error||'Upload gagal')
+        });
+        reject(error);
+      })
       .processForm(form);
   });
 }
@@ -177,6 +198,7 @@ $('photos').addEventListener('change',e=>{
   $('status').textContent=selected.length+' foto dipilih.';
   $('queue').innerHTML='';
   $('bar').style.width='0%';
+  notifyParent('progress',{message:selected.length+' foto dipilih.'});
 });
 
 $('start').addEventListener('click',async()=>{
@@ -202,6 +224,7 @@ $('start').addEventListener('click',async()=>{
     try{
       originalBytes+=source.size;
       $('status').textContent='Memproses '+(i+1)+' dari '+total+' · kompres foto…';
+      notifyParent('progress',{message:'Memproses '+(i+1)+' dari '+total+' · kompres foto…'});
       const result=await compressPhoto(source);
       storedBytes+=result.size;
 
@@ -210,6 +233,7 @@ $('start').addEventListener('click',async()=>{
       const form=makeSingleFileForm(uploadFile,source.size,photoId);
 
       $('status').textContent='Mengupload '+(i+1)+' dari '+total+' ke Google Drive…';
+      notifyParent('progress',{message:'Mengupload '+(i+1)+' dari '+total+' ke Google Drive…'});
       const response=await callUpload(form);
       form.remove();
 
@@ -236,6 +260,11 @@ $('start').addEventListener('click',async()=>{
   const saved=originalBytes?Math.max(0,Math.round((1-storedBytes/originalBytes)*100)):0;
   $('status').textContent=
     'Selesai: '+success+' berhasil · '+failed+' gagal · '+origMB+' MB → '+storedMB+' MB · hemat ±'+saved+'%.';
+  notifyParent('done',{
+    message:'Selesai: '+success+' berhasil · '+failed+' gagal · hemat ±'+saved+'%.',
+    success,
+    failed
+  });
 
   selected=[];
   $('photos').value='';

@@ -1,5 +1,5 @@
-const CACHE = "fotomu-phase3d2-v3";
-const APP = ["./","./index.html","./kegiatan.html","./rak.html","./kelola-foto.html","./admin.html","./manifest.json"];
+const CACHE = "fotomu-phase4b-v1";
+const APP = ["./","./index.html","./kegiatan.html","./rak.html","./kelola-foto.html","./admin.html","./upload.html","./manifest.json"];
 self.addEventListener("install", e => e.waitUntil(caches.open(CACHE).then(c => c.addAll(APP)).then(() => self.skipWaiting())));
 self.addEventListener("activate", e => e.waitUntil(
   caches.keys().then(keys => Promise.all(keys.filter(k => k !== CACHE).map(k => caches.delete(k)))).then(() => self.clients.claim())
